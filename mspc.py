@@ -260,7 +260,7 @@ def DyQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alp
         threshold_Q = thresholds_Q
 
     if plot:
-        plot_DyQ_train_test(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alpha=[alpha] if np.isscalar(alpha) else alpha, type_q=type_q, logscale=logscale, event_index=event_index)
+        plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alpha=[alpha] if np.isscalar(alpha) else alpha, type_q=type_q, logscale=logscale, event_index=event_index)
 
     return D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q
 
