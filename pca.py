@@ -79,23 +79,25 @@ def adjust_PCA(data, n_components, with_std=False):
     return data_fit, pca
 
 
-def plot_scores_2d(data_fitted, pc1, pc2, pca_fitted):
+def plot_scores_2d(data_fitted, pc1:int, pc2:int, pca_fitted):
     """
     Grafica los scores en 2D con la varianza explicada por cada componente en los ejes.
     
     :param data_fitted: Datos ajustados por PCA
     :param pca_fitted: PCA ajustado
     """
+    pc1-=1
+    pc2-=1
     explained_variance = pca_fitted.explained_variance_ratio_ * 100  # Convertir a porcentaje
     plt.figure(figsize=(8, 6))
     plt.scatter(data_fitted[:, pc1], data_fitted[:, pc2], alpha=0.5)
     plt.axhline(0, color='black', linestyle='--', linewidth=0.8)  # Eje horizontal
     plt.axvline(0, color='black', linestyle='--', linewidth=0.8)  # Eje vertical
-    plt.xlabel(f'PC1 ({explained_variance[pc1]:.2f}%)', fontsize=20)
-    plt.ylabel(f'PC2 ({explained_variance[pc2]:.2f}%)', fontsize=20)
+    plt.xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)', fontsize=20)
+    plt.ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)', fontsize=20)
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
-    plt.title('Scores en 2D')
+    plt.title('Scores 2D', fontsize = 16)
     plt.show()
 
 def plot_loadings_2d(pc1, pc2, pca_fitted):
@@ -105,14 +107,18 @@ def plot_loadings_2d(pc1, pc2, pca_fitted):
     :param data_fitted: Datos ajustados por PCA
     :param pca_fitted: PCA ajustado
     """
+    pc1-=1
+    pc2-=1
     explained_variance = pca_fitted.explained_variance_ratio_ * 100  # Convertir a porcentaje
     plt.figure(figsize=(8, 6))
     plt.scatter(pca_fitted.components_[pc1], pca_fitted.components_[pc2], alpha=0.5)
     plt.axhline(0, color='black', linestyle='--', linewidth=0.8)  # Eje horizontal
     plt.axvline(0, color='black', linestyle='--', linewidth=0.8)  # Eje vertical
-    plt.xlabel(f'PC1 ({explained_variance[pc1]:.2f}%)')
-    plt.ylabel(f'PC2 ({explained_variance[pc2]:.2f}%)')
-    plt.title('Loadings en 2D')
+    plt.xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)', fontsize=20)
+    plt.ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)', fontsize=20)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    plt.title('Loadings 2D', fontsize = 16)
     plt.show()
 
 def plot_scores_1d(data_fitted, pc1, pca_fitted):
@@ -123,12 +129,13 @@ def plot_scores_1d(data_fitted, pc1, pca_fitted):
     :param pc1: Índice de la componente principal (normalmente 0 para la primera)
     :param pca_fitted: PCA ajustado
     """
+    pc1-=1
     explained_variance = pca_fitted.explained_variance_ratio_[pc1] * 100  # Convertir a porcentaje
     plt.figure(figsize=(8, 4))
     plt.plot(data_fitted[:, pc1], marker='o', linestyle='-', alpha=0.7)
     plt.axhline(0, color='black', linestyle='--', linewidth=0.8)  # Línea horizontal en 0
     plt.xlabel('Índice de observación')
-    plt.ylabel(f'PC1 ({explained_variance:.2f}%)')
+    plt.ylabel(f'PC{pc1} ({explained_variance:.2f}%)')
     plt.title('Scores en 1D')
     plt.grid(True)
     plt.show()
@@ -140,12 +147,13 @@ def plot_loadings_1d(pc1, pca_fitted):
     :param pc1: Índice de la componente principal (normalmente 0 para la primera)
     :param pca_fitted: PCA ajustado
     """
+    pc1-=1
     explained_variance = pca_fitted.explained_variance_ratio_[pc1] * 100  # Convertir a porcentaje
     plt.figure(figsize=(8, 4))
     plt.plot(pca_fitted.components_[pc1], marker='o', linestyle='-', alpha=0.7)
     plt.axhline(0, color='black', linestyle='--', linewidth=0.8)  # Línea horizontal en 0
     plt.xlabel('Índice de variable')
-    plt.ylabel(f'PC1 ({explained_variance:.2f}%)')
+    plt.ylabel(f'PC{pc1+1} ({explained_variance:.2f}%)')
     plt.title('Loadings en 1D')
     plt.grid(True)
     plt.show()
