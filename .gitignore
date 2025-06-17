@@ -1,3 +1,4 @@
 tests/
+dist/
 __pycache__/
 .venv/

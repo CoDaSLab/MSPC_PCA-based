@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mspc-pca" # Usamos guiones en el nombre del paquete para pip install
+version = "0.1.0"
+authors = [
+  { name="CoDaS Lab", email="codas@ugr.es" },
+]
+description = "PCA based MSPC implementation in Python."
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["mspc", "pca", "python", "mspc-pca"] # Consistentemente usando guiones aquí también
+license = { text = "MIT License" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "numpy",
+    "scikit-learn",
+    "matplotlib",
+]
+
+[project.urls]
+Homepage = "https://github.com/CoDaSLab/MSPC_PCA-based"
+Issues = "https://github.com/CoDaSLab/MSPC_PCA-based/issues"
+Source = "https://github.com/CoDaSLab/MSPC_PCA-based"
+
+[tool.setuptools.packages.find]
+where = ["src"]
