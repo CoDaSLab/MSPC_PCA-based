@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
-from ckf import ckf
+from .ckf import ckf
 
 
 def pca_resvar(data, max_components, with_std=True, with_ckf=True, exclude_zero=False):

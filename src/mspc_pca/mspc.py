@@ -277,7 +277,10 @@ def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alph
 
     # Gráfico de D
     plt.subplot(2, 1, 1)
-    colors = ['red' if i in event_index else ('blue' if i < n_train else 'yellow') for i in range(len(D_all))]
+    if event_index is not None:
+        colors = ['red' if i in event_index else ('blue' if i < n_train else 'yellow') for i in range(len(D_all))]
+    else:
+        colors = ['blue' if i < n_train else 'yellow' for i in range(len(D_all))]
     
     plt.bar(range(n_train), D_train, color=colors[:n_train], alpha=1, label='Train')
     plt.bar(range(n_train, len(D_all)), D_test, color=colors[n_train:], alpha=1, label='Test')
@@ -289,7 +292,7 @@ def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alph
             plt.axhline(y=th, linestyle='--', label=label, color='red')
     plt.title('Distancia de Hotelling (D)')
     plt.ylabel('D')
-    plt.axvline(x=n_train, color='black', linestyle='--', label='Separador Train/Test')
+    plt.axvline(x=n_train-0.5, color='black', linestyle='--', label='Separador Train/Test')
     if logscale:
         plt.yscale('log')
     plt.legend()
@@ -297,7 +300,11 @@ def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alph
 
     # Gráfico de Q
     plt.subplot(2, 1, 2)
-    colors = ['red' if event_index and i in event_index else ('green' if i < n_train else 'yellow') for i in range(len(D_all))]
+    if event_index is not None:
+        colors = ['red' if event_index and i in event_index else ('green' if i < n_train else 'yellow') for i in range(len(D_all))]
+    else:
+        colors = ['green' if i < n_train else 'yellow' for i in range(len(D_all))]
+
     plt.bar(range(n_train), Q_train, color=colors[:n_train], alpha=1, label='Train')
     plt.bar(range(n_train, len(Q_all)), Q_test, color=colors[n_train:], alpha=1, label='Test')
     if np.isscalar(threshold_Q):
@@ -308,7 +315,7 @@ def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alph
             plt.axhline(y=th, linestyle='--', label=label, color='red')
     plt.title('Error de Predicción (Q)')
     plt.ylabel('Q')
-    plt.axvline(x=n_train, color='black', linestyle='--', label='Separador Train/Test')
+    plt.axvline(x=n_train-0.5, color='black', linestyle='--', label='Separador Train/Test')
     if logscale:
         plt.yscale('log')
     plt.legend()
@@ -316,115 +323,115 @@ def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alph
     plt.tight_layout()
     plt.show()
 
-import matlab.engine
-
-def DyQ_tt_MEDA(train, test, n_components, preprocessing = 0, alpha = 0.05, plot = False):
-    eng = matlab.engine.start_matlab() 
-
-    result = eng.mspcPca(
-        matlab.double(train.tolist()),
-        'PCs', matlab.double(list(range(1, n_components + 1))),
-        'ObsTest', matlab.double(test.tolist()), 
-        'Preprocessing', preprocessing,
-        'PValueD', matlab.double(alpha),
-        'PValueQ', matlab.double(alpha),
-        'Plot', plot,
-        nargout=6
-    )   
-    eng.quit()
-
-    python_result = tuple(
-        np.array(result[i]) if isinstance(result[i], matlab.double) else result[i]
-        for i in range(len(result))
-    )
-
-    return python_result
-    
-def DyQ_MEDA(X, n_components, preprocessing = 0, alpha = 0.05, plot = False):
-    eng = matlab.engine.start_matlab() 
-
-    result = eng.mspcPca(
-        matlab.double(X.tolist()),  
-        'PCs', matlab.double(list(range(1, n_components + 1))),
-        'Preprocessing', preprocessing,
-        'PValueD', matlab.double(alpha),
-        'PValueQ', matlab.double(alpha),
-        'Plot', plot,
-        nargout=6
-    )   
-    eng.quit()
-
-    python_result = tuple(
-        np.array(result[i]) if isinstance(result[i], matlab.double) else result[i]
-        for i in range(len(result))
-    )
-
-    return python_result
-
-
-# ------------------------------------------------------------------------- TESTING -----------------------------------------------------------------------------------------
-def compare_tuples(tuple1, tuple2):
-    """
-    Compara elemento por elemento dos tuplas que contienen elementos numpy, 
-    permitiendo ligeras diferencias debido a errores de cálculo.
-
-    :param tuple1: Primera tupla.
-    :param tuple2: Segunda tupla.
-    :return: Lista de booleanos indicando si los elementos correspondientes son iguales dentro de la tolerancia.
-    """
-    if len(tuple1) != len(tuple2):
-        raise ValueError("Las tuplas deben tener la misma longitud para ser comparadas.")
-    
-    atol, rtol = 1e-8, 1e-5
-    while atol <= 1e-1 and rtol <= 1e-1:
-        result_atol = np.prod([np.allclose(a, b, atol=atol) for a, b in zip(tuple1, tuple2)])
-        result_rtol = np.prod([np.allclose(a, b, rtol=rtol) for a, b in zip(tuple1, tuple2)])
-        if result_atol:
-            print(f"Resultados con diferencia absoluta menor que {atol} y diferencia relativa mayor que {rtol*100}%")
-            return result_atol
-        if result_rtol:
-            print(f"Resultados con diferencia relativa menor que {rtol*100}% y diferencia absoluta mayor que {atol}")
-            return result_rtol
-        atol *= 10
-        rtol *= 10
-    print("No se encontró una tolerancia que haga que el resultado sea verdadero.")
-    return False
-
-
-def random_X(shape, dist='normal', seed=None):
-    rng = np.random.default_rng(seed)
-    if dist == 'normal':
-        return rng.normal(size=shape)
-    elif dist == 'uniform':
-        return rng.uniform(-1, 1, size=shape)
-    elif dist == 'exponential':
-        return rng.exponential(scale=1.0, size=shape)
-    elif dist == 'binary':
-        return rng.integers(0, 2, size=shape)
-    else:
-        raise ValueError("Distribución no soportada")
-
-def test_thresholds(dist, n_samples=200, n_features=10, n_components=2, preprocessing=1, alphas=[0.05, 0.01]):
-    X = random_X((n_samples, n_features), dist=dist, seed=42)
-    # Python
-    result_py = DyQ(X, n_components, preprocessing, alpha=alphas, plot=False)
-    # MATLAB
-    result_matlab = DyQ_MEDA(X, n_components, preprocessing, alpha=alphas, plot=False)
-    # Compara solo los umbrales
-    diffs_D = np.abs(np.array(result_py[-2]) - np.array(result_matlab[-2]))
-    diffs_Q = np.abs(np.array(result_py[-1]) - np.array(result_matlab[-1]))
-    coinciden = compare_tuples(result_py[-2:], result_matlab[-2:])
-    return {
-        "coinciden": coinciden,
-        "D_py": result_py[-2],
-        "D_matlab": result_matlab[-2],
-        "Q_py": result_py[-1],
-        "Q_matlab": result_matlab[-1],
-        "diffs_D": diffs_D,
-        "diffs_Q": diffs_Q
-    }
-
 if __name__ == "__main__":
+    import matlab.engine
+
+    def DyQ_tt_MEDA(train, test, n_components, preprocessing = 0, alpha = 0.05, plot = False):
+        eng = matlab.engine.start_matlab() 
+
+        result = eng.mspcPca(
+            matlab.double(train.tolist()),
+            'PCs', matlab.double(list(range(1, n_components + 1))),
+            'ObsTest', matlab.double(test.tolist()), 
+            'Preprocessing', preprocessing,
+            'PValueD', matlab.double(alpha),
+            'PValueQ', matlab.double(alpha),
+            'Plot', plot,
+            nargout=6
+        )   
+        eng.quit()
+
+        python_result = tuple(
+            np.array(result[i]) if isinstance(result[i], matlab.double) else result[i]
+            for i in range(len(result))
+        )
+
+        return python_result
+        
+    def DyQ_MEDA(X, n_components, preprocessing = 0, alpha = 0.05, plot = False):
+        eng = matlab.engine.start_matlab() 
+
+        result = eng.mspcPca(
+            matlab.double(X.tolist()),  
+            'PCs', matlab.double(list(range(1, n_components + 1))),
+            'Preprocessing', preprocessing,
+            'PValueD', matlab.double(alpha),
+            'PValueQ', matlab.double(alpha),
+            'Plot', plot,
+            nargout=6
+        )   
+        eng.quit()
+
+        python_result = tuple(
+            np.array(result[i]) if isinstance(result[i], matlab.double) else result[i]
+            for i in range(len(result))
+        )
+
+        return python_result
+
+
+    # ------------------------------------------------------------------------- TESTING -----------------------------------------------------------------------------------------
+    def compare_tuples(tuple1, tuple2):
+        """
+        Compara elemento por elemento dos tuplas que contienen elementos numpy, 
+        permitiendo ligeras diferencias debido a errores de cálculo.
+
+        :param tuple1: Primera tupla.
+        :param tuple2: Segunda tupla.
+        :return: Lista de booleanos indicando si los elementos correspondientes son iguales dentro de la tolerancia.
+        """
+        if len(tuple1) != len(tuple2):
+            raise ValueError("Las tuplas deben tener la misma longitud para ser comparadas.")
+        
+        atol, rtol = 1e-8, 1e-5
+        while atol <= 1e-1 and rtol <= 1e-1:
+            result_atol = np.prod([np.allclose(a, b, atol=atol) for a, b in zip(tuple1, tuple2)])
+            result_rtol = np.prod([np.allclose(a, b, rtol=rtol) for a, b in zip(tuple1, tuple2)])
+            if result_atol:
+                print(f"Resultados con diferencia absoluta menor que {atol} y diferencia relativa mayor que {rtol*100}%")
+                return result_atol
+            if result_rtol:
+                print(f"Resultados con diferencia relativa menor que {rtol*100}% y diferencia absoluta mayor que {atol}")
+                return result_rtol
+            atol *= 10
+            rtol *= 10
+        print("No se encontró una tolerancia que haga que el resultado sea verdadero.")
+        return False
+
+
+    def random_X(shape, dist='normal', seed=None):
+        rng = np.random.default_rng(seed)
+        if dist == 'normal':
+            return rng.normal(size=shape)
+        elif dist == 'uniform':
+            return rng.uniform(-1, 1, size=shape)
+        elif dist == 'exponential':
+            return rng.exponential(scale=1.0, size=shape)
+        elif dist == 'binary':
+            return rng.integers(0, 2, size=shape)
+        else:
+            raise ValueError("Distribución no soportada")
+
+    def test_thresholds(dist, n_samples=200, n_features=10, n_components=2, preprocessing=1, alphas=[0.05, 0.01]):
+        X = random_X((n_samples, n_features), dist=dist, seed=42)
+        # Python
+        result_py = DyQ(X, n_components, preprocessing, alpha=alphas, plot=False)
+        # MATLAB
+        result_matlab = DyQ_MEDA(X, n_components, preprocessing, alpha=alphas, plot=False)
+        # Compara solo los umbrales
+        diffs_D = np.abs(np.array(result_py[-2]) - np.array(result_matlab[-2]))
+        diffs_Q = np.abs(np.array(result_py[-1]) - np.array(result_matlab[-1]))
+        coinciden = compare_tuples(result_py[-2:], result_matlab[-2:])
+        return {
+            "coinciden": coinciden,
+            "D_py": result_py[-2],
+            "D_matlab": result_matlab[-2],
+            "Q_py": result_py[-1],
+            "Q_matlab": result_matlab[-1],
+            "diffs_D": diffs_D,
+            "diffs_Q": diffs_Q
+        }
+
     distribuciones = ['normal', 'uniform', 'exponential', 'binary']
     n_samples = 2000
     n_features = 10
