@@ -301,7 +301,7 @@ def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alph
     # Gráfico de Q
     plt.subplot(2, 1, 2)
     if event_index is not None:
-        colors = ['red' if event_index and i in event_index else ('green' if i < n_train else 'yellow') for i in range(len(D_all))]
+        colors = ['red' if i in event_index else ('green' if i < n_train else 'yellow') for i in range(len(D_all))]
     else:
         colors = ['green' if i < n_train else 'yellow' for i in range(len(D_all))]
 

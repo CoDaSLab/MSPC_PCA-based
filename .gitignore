@@ -1,4 +1,4 @@
-tests/
 dist/
 __pycache__/
 .venv/
+.vscode
