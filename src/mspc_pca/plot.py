@@ -182,7 +182,7 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     # ax.scatter(loadings_scaled[pc1], loadings_scaled[pc2], alpha=0.5, label='Loadings', color='red')
     if loading_labels is not None:
         for i, label in enumerate(loading_labels):
-            ax.text(loadings_scaled[0, i], loadings_scaled[1, i], label, fontsize=8, color='grey')
+            ax.text(loadings_scaled[pc1, i], loadings_scaled[pc2, i], label, fontsize=8, color='grey')
     
     for i in range(loadings_scaled.shape[1]):
         ax.annotate(
