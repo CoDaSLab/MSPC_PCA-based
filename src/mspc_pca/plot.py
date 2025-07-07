@@ -195,8 +195,8 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
 
-    ax.set_xlabel(f'PC1 ({explained_variance[pc1]:.2f}%)')
-    ax.set_ylabel(f'PC2 ({explained_variance[pc2]:.2f}%)')
+    ax.set_xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)')
+    ax.set_ylabel(f'PC{pc2+2} ({explained_variance[pc2]:.2f}%)')
     # ax.title('2D Scores and Loadings (Superimposed and Scaled)')
 
     arrow_legend = Line2D([0], [0], color='red', lw=1, marker='>', markersize=6, label='Loadings (as arrows)')
