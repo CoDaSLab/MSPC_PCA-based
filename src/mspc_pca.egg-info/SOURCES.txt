@@ -2,12 +2,15 @@ pyproject.toml
 src/mspc_pca/__init__.py
 src/mspc_pca/ckf.py
 src/mspc_pca/mspc.py
-src/mspc_pca/pca.py
-src/mspc_pca/utils.py
 src/mspc_pca/omeda.py
+src/mspc_pca/pca.py
+src/mspc_pca/plot.py
+src/mspc_pca/utils.py
 src/mspc_pca.egg-info/PKG-INFO
 src/mspc_pca.egg-info/SOURCES.txt
 src/mspc_pca.egg-info/dependency_links.txt
 src/mspc_pca.egg-info/requires.txt
 src/mspc_pca.egg-info/top_level.txt
+tests/test0.py
 tests/test_omeda.py
+tests/test_plots.py
