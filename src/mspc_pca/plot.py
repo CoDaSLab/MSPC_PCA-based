@@ -228,6 +228,7 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
 
     ax.set_xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)')
+    ax.set_ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)')
     # Coordenadas de scores y loadings
     score_coords = np.column_stack((scores_scaled[:, pc1], scores_scaled[:, pc2]))
     loading_coords = np.column_stack((loadings_scaled[pc1], loadings_scaled[pc2]))
