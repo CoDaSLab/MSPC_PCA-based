@@ -174,7 +174,7 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     Combines score and loading plots into a single superimposed graph,
     scaling both scores and loadings to maintain their relative positions.
     
-    :param data: PCA transformed data (scores) to plot.
+    :param data: data to transform into scores
     :param pca_model: Fitted PCA model (sklearn.decomposition.PCA object) used to generate the scores and loadings.
     :param pc1: Index of the first principal component to plot on the x-axis (1-based).
     :param pc2: Index of the second principal component to plot on the y-axis (1-based).
@@ -197,18 +197,6 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     scores_scaled = scores / np.max(np.abs(scores), axis=0)
     loadings_scaled = pca_model.components_ / np.max(np.abs(pca_model.components_), axis=1)[:, np.newaxis]
 
-    # Plot scores
-    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=20) # Increased marker size
-    if score_labels is not None:
-        filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
-        for x, y, label in filtered:
-            offset = 0.025
-            sign_x = x/np.abs(x)
-            sign_y = y/np.abs(y)
-            ax.text(x + offset*sign_x, y + offset*sign_y, label, 
-                    fontsize=9, color='black', ha='center', va='center')
-
-
     # Plot loadings
     # ax.scatter(loadings_scaled[pc1], loadings_scaled[pc2], alpha=0.5, label='Loadings', color='red')
     if loading_labels is not None:
@@ -223,6 +211,19 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
             xytext=(0, 0),  # Arrow start (origin)
             arrowprops=dict(arrowstyle='->', color='red', linewidth=1)
         )
+
+
+    # Plot scores
+    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=20) # Increased marker size
+    if score_labels is not None:
+        filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
+        for x, y, label in filtered:
+            offset = 0.025
+            sign_x = x/np.abs(x)
+            sign_y = y/np.abs(y)
+            ax.text(x + offset*sign_x, y + offset*sign_y, label, 
+                    fontsize=9, color='black', ha='center', va='center')
+            
 
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
