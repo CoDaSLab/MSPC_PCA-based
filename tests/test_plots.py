@@ -8,6 +8,8 @@ data = np.random.rand(50, 10) * 10
 data[:, 0] = data[:, 0] + data[:, 2] * 2 # Introduce some correlation
 data[:, 1] = data[:, 1] - data[:, 3] * 1.5
 
+data[:,4] = data[:,4]*5
+
 obs_l = np.arange(50)
 var_l = np.arange(10)
 
