@@ -214,7 +214,7 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
 
 
     # Plot scores
-    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=20) # Increased marker size
+    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=20,zorder=3) # Increased marker size
     if score_labels is not None:
         filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
