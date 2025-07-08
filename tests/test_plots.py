@@ -52,5 +52,7 @@ def test_loadings():
     
 def test_biplot():
     plot.biplot(X, pca, 1, 2, obs_l, var_l)
+    plt.show(block=False)
+    plot.biplot(X, pca, 3, 4, obs_l, var_l)
     plt.show()
     return
