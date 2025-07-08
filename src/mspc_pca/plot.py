@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import pairwise_distances
 from .ckf import ckf
 from matplotlib.lines import Line2D 
 
@@ -60,8 +61,35 @@ def var_pca(data, max_components, with_std=True, with_ckf=True, exclude_zero=Fal
     return fig, ax
 
 
+def filter_labels(scores, labels, pc1, pc2, min_dist=0.05):
+    """
+    Filtra las etiquetas que están demasiado cerca unas de otras.
 
-def scores(data, pca_model, pc1:int, pc2:int, labels:list=None, ax=None):
+    :param scores: Matriz de scores (transformación PCA), shape (n_samples, n_components)
+    :param labels: Lista de etiquetas correspondientes a los puntos
+    :param pc1: Índice del primer componente (0-based)
+    :param pc2: Índice del segundo componente (0-based)
+    :param min_dist: Distancia mínima entre puntos para conservar la etiqueta
+    :return: Lista de tuplas (x, y, label) filtradas
+    """
+    coords = scores[:, [pc1, pc2]]
+    kept = []
+    added = []
+
+    for i, (x, y) in enumerate(coords):
+        point = np.array([[x, y]])
+        if len(added) == 0:
+            kept.append((x, y, labels[i]))
+            added.append(point)
+        else:
+            dists = pairwise_distances(point, np.vstack(added))
+            if np.min(dists) >= min_dist:
+                kept.append((x, y, labels[i]))
+                added.append(point)
+
+    return kept
+
+def scores(data, pca_model, pc1:int, pc2:int, labels:list=None, label_dist:float = 1.0, ax=None):
     """
     Plots the 2D scores with the explained variance for each component on the axes.
     
@@ -94,12 +122,13 @@ def scores(data, pca_model, pc1:int, pc2:int, labels:list=None, ax=None):
     ax.set_title('2D Scores', fontsize = 16)
 
     if labels is not None:
-        for i, label in enumerate(labels):
-            ax.text(scores[i, pc1], scores[i, pc2], label, fontsize=8, color='black')
+        filtered = filter_labels(scores, labels, pc1, pc2, min_dist=label_dist)
+        for x, y, label in filtered:
+            ax.text(x, y, label, fontsize=8, color='black')
 
     return fig, ax
 
-def loadings(pca_model, pc1: int, pc2: int, labels: list = None, ax=None):
+def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:float = 0.01, ax=None):
     """
     Plots the 2D loadings for the principal components.
     
@@ -125,8 +154,9 @@ def loadings(pca_model, pc1: int, pc2: int, labels: list = None, ax=None):
     ax.scatter(loadings[pc1], loadings[pc2], alpha=0.9)
     
     if labels is not None:
-        for i, label in enumerate(labels):
-            ax.text(loadings[0,i], loadings[1,i], label, fontsize=8, color='black')
+        filtered = filter_labels(loadings, labels, pc1, pc2, min_dist=label_dist)
+        for x, y, label in filtered:
+            ax.text(x, y, label, fontsize=8, color='black')
 
 
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)  # Horizontal axis
@@ -139,7 +169,7 @@ def loadings(pca_model, pc1: int, pc2: int, labels: list = None, ax=None):
     
     return fig, ax
 
-def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, ax=None):
+def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, label_dist:float = 1.0, ax=None):
     """
     Combines score and loading plots into a single superimposed graph,
     scaling both scores and loadings to maintain their relative positions.
@@ -170,19 +200,21 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     # Plot scores
     ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=20) # Increased marker size
     if score_labels is not None:
-        for i, label in enumerate(score_labels):
+        filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
+        for x, y, label in filtered:
             offset = 0.025
-            sign_x = scores_scaled[i,pc1]/np.abs(scores_scaled[i,pc1])
-            sign_y = scores_scaled[i,pc2]/np.abs(scores_scaled[i,pc2])
-            ax.text(scores_scaled[i, pc1] + offset*sign_x, scores_scaled[i, pc2] + offset*sign_y, label, 
+            sign_x = x/np.abs(x)
+            sign_y = y/np.abs(y)
+            ax.text(x + offset*sign_x, y + offset*sign_y, label, 
                     fontsize=9, color='black', ha='center', va='center')
 
 
     # Plot loadings
     # ax.scatter(loadings_scaled[pc1], loadings_scaled[pc2], alpha=0.5, label='Loadings', color='red')
     if loading_labels is not None:
-        for i, label in enumerate(loading_labels):
-            ax.text(loadings_scaled[pc1, i], loadings_scaled[pc2, i], label, fontsize=8, color='grey')
+        filtered = filter_labels(loadings_scaled, loading_labels, pc1, pc2, min_dist=label_dist)
+        for x, y, label in filtered:
+            ax.text(x, y, label, fontsize=8, color='grey')
     
     for i in range(loadings_scaled.shape[1]):
         ax.annotate(
