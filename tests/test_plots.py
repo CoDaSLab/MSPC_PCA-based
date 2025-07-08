@@ -3,12 +3,12 @@ from src.mspc_pca import plot
 import numpy as np
 
 # Synthetic data for testing
-np.random.seed(124) 
-data = np.random.rand(500, 10) * 10 
+np.random.seed(123) 
+data = np.random.rand(50, 10) * 10 
 data[:, 0] = data[:, 0] + data[:, 2] * 2 # Introduce some correlation
 data[:, 1] = data[:, 1] - data[:, 3] * 1.5
 
-obs_l = np.arange(500)
+obs_l = np.arange(50)
 var_l = np.arange(10)
 
 # Normalize the data

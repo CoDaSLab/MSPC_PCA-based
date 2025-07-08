@@ -61,18 +61,18 @@ def var_pca(data, max_components, with_std=True, with_ckf=True, exclude_zero=Fal
     return fig, ax
 
 
-def filter_labels(scores, labels, pc1, pc2, min_dist=0.05):
+def filter_labels(data, labels, pc1, pc2, min_dist=0.05):
     """
-    Filtra las etiquetas que están demasiado cerca unas de otras.
+    Filters out labels that are too close to each other based on a minimum distance.
 
-    :param scores: Matriz de scores (transformación PCA), shape (n_samples, n_components)
-    :param labels: Lista de etiquetas correspondientes a los puntos
-    :param pc1: Índice del primer componente (0-based)
-    :param pc2: Índice del segundo componente (0-based)
-    :param min_dist: Distancia mínima entre puntos para conservar la etiqueta
-    :return: Lista de tuplas (x, y, label) filtradas
+    :param data: Data matrix of shape (n_samples, n_features).
+    :param labels: List of labels corresponding to the data points.
+    :param pc1: Index of the first principal component (0-based).
+    :param pc2: Index of the second principal component (0-based).
+    :param min_dist: Minimum allowed distance between labeled points.
+    :return: List of filtered (x, y, label) tuples.
     """
-    coords = scores[:, [pc1, pc2]]
+    coords = data[:, [pc1, pc2]]
     kept = []
     added = []
 
@@ -212,7 +212,7 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     # Plot loadings
     # ax.scatter(loadings_scaled[pc1], loadings_scaled[pc2], alpha=0.5, label='Loadings', color='red')
     if loading_labels is not None:
-        filtered = filter_labels(loadings_scaled, loading_labels, pc1, pc2, min_dist=label_dist)
+        filtered = filter_labels(loadings_scaled.T, loading_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
             ax.text(x, y, label, fontsize=8, color='grey')
     
@@ -228,8 +228,14 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
 
     ax.set_xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)')
-    ax.set_ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)')
-    # ax.title('2D Scores and Loadings (Superimposed and Scaled)')
+    # Coordenadas de scores y loadings
+    score_coords = np.column_stack((scores_scaled[:, pc1], scores_scaled[:, pc2]))
+    loading_coords = np.column_stack((loadings_scaled[pc1], loadings_scaled[pc2]))
+
+    # Actualizar límites con ambos conjuntos
+    all_coords = np.vstack((score_coords, loading_coords))
+    ax.update_datalim(all_coords)
+    ax.autoscale_view()
 
     arrow_legend = Line2D([0], [0], color='red', lw=1, marker='>', markersize=6, label='Loadings (as arrows)')
     handles, labels = ax.get_legend_handles_labels()
