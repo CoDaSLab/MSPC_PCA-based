@@ -169,7 +169,7 @@ def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:floa
     
     return fig, ax
 
-def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, label_dist:float = 1.0, ax=None):
+def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, label_dist:float = 1.0, size:int=20, ax=None):
     """
     Combines score and loading plots into a single superimposed graph,
     scaling both scores and loadings to maintain their relative positions.
@@ -209,12 +209,12 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
             '',  # No text
             xy=(loadings_scaled[pc1, i], loadings_scaled[pc2, i]),  # Arrow tip (target)
             xytext=(0, 0),  # Arrow start (origin)
-            arrowprops=dict(arrowstyle='->', color='red', linewidth=1)
+            arrowprops=dict(arrowstyle='->', color='red', linewidth=1, alpha=0.5)
         )
 
 
     # Plot scores
-    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=20,zorder=3) # Increased marker size
+    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=size,zorder=3) # Increased marker size
     if score_labels is not None:
         filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:

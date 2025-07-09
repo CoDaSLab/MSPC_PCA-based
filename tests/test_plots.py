@@ -4,14 +4,14 @@ import numpy as np
 
 # Synthetic data for testing
 np.random.seed(124) 
-data = np.random.rand(500, 100) * 10 
+data = np.random.rand(50, 10) * 10 
 data[:, 0] = data[:, 0] + data[:, 2] * 2 # Introduce some correlation
 data[:, 1] = data[:, 1] - data[:, 3] * 1.5
 
 data[:,4] = data[:,4]*5
 
-obs_l = np.arange(500)
-var_l = np.arange(100)
+obs_l = np.arange(50)
+var_l = np.arange(10)
 
 # Normalize the data
 scaler = StandardScaler(with_std=False)
@@ -40,6 +40,6 @@ def test_loadings():
     return
     
 def test_biplot():
-    plot.biplot(X, pca, 1, 2, obs_l, var_l)
+    plot.biplot(X, pca, 1, 2, obs_l, var_l, size=50)
     plt.show()
     return
