@@ -234,7 +234,7 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     if score_classes is not None:
         scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c=score_classes, cmap=cmap, label ='Scores',alpha=0.9, s=size,zorder=3)
     else:
-        ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c = 'blue', label ='Scores',alpha=0.9, s=size,zorder=3)
+        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c = 'blue', label ='Scores',alpha=0.9, s=size,zorder=3)
 
     if score_labels is not None:
         filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
