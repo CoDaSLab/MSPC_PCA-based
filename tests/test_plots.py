@@ -11,6 +11,7 @@ data[:, 1] = data[:, 1] - data[:, 3] * 1.5
 data[:,4] = data[:,4]*5
 
 obs_l = np.arange(50)
+classes = np.arange(50)
 var_l = np.arange(10)
 
 # Normalize the data
@@ -30,16 +31,19 @@ def test_var_pca():
     return
 
 def test_scores():
-    plot.scores(X, pca, 1, 2, labels=obs_l)
+    _,_,scatter = plot.scores(X, pca, 1, 2, labels=obs_l, classes=classes, cmap='rainbow')
+    plt.colorbar(scatter, )
     plt.show()
     return
 
 def test_loadings():
-    plot.loadings(pca, 1, 2, labels=var_l, label_dist=0.01)
+    _,_,scatter=plot.loadings(pca, 1, 2, labels=var_l, label_dist=0.01, classes=var_l[:], cmap='rainbow')
+    plt.colorbar(scatter, )
     plt.show()
     return
     
 def test_biplot():
-    plot.biplot(X, pca, 1, 2, obs_l, var_l, size=50)
+    _,_, scatter = plot.biplot(X, pca, 1, 2, obs_l, var_l, size=5, score_classes=classes)
+    plt.colorbar(scatter, )
     plt.show()
     return

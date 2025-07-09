@@ -89,19 +89,22 @@ def filter_labels(data, labels, pc1, pc2, min_dist=0.05):
 
     return kept
 
-def scores(data, pca_model, pc1:int, pc2:int, labels:list=None, label_dist:float = 1.0, ax=None):
+def scores(data, pca_model, pc1: int, pc2: int, labels: list = None, 
+           label_dist: float = 1.0, classes: list = None, cmap:str='viridis', ax=None):
     """
-    Plots the 2D scores with the explained variance for each component on the axes.
+    Plots the 2D PCA scores with optional point labeling and class-based coloring.
     
-    :param data: original data to plot as scores.
-    :param pca_model: Fitted PCA model (sklearn.decomposition.PCA object) used to generate the scores.
+    :param data: Original data to plot as scores.
+    :param pca_model: Fitted PCA model (sklearn.decomposition.PCA object).
     :param pc1: Index of the first principal component to plot on the x-axis (1-based).
     :param pc2: Index of the second principal component to plot on the y-axis (1-based).
-    :param labels: Optional list of labels for the scores points.
-    :param ax: Optional matplotlib Axes object to plot on. If None, a new Figure and Axes will be created.
-    :return: A tuple containing the matplotlib Figure (or None if 'ax' was provided) and Axes objects.
+    :param labels: Optional list of text labels for score points.
+    :param label_dist: Minimum distance between labeled points.
+    :param classes: Optional list or array of class labels for coloring the points.
+    :param ax: Optional matplotlib Axes object. If None, a new Figure and Axes will be created.
+    :return: A tuple (Figure, Axes). Figure is None if ax was provided.
     """
-    pc1, pc2 = pc1-1, pc2-1 # Adjust to 0-based indexing for Python
+    pc1, pc2 = pc1 - 1, pc2 - 1  # Convert to 0-based indexing
 
     scores = pca_model.fit_transform(data)
     explained_variance = pca_model.explained_variance_ratio_ * 100  # Convert to percentage
@@ -112,23 +115,29 @@ def scores(data, pca_model, pc1:int, pc2:int, labels:list=None, label_dist:float
     else:
         fig = None
 
-    ax.scatter(scores[:, pc1], scores[:, pc2], alpha=0.9)
+    # Plot with color if classes are provided
+    if classes is not None:
+        scatter = ax.scatter(scores[:, pc1], scores[:, pc2], c=classes, cmap=cmap, alpha=0.9)
+
+    else:
+        ax.scatter(scores[:, pc1], scores[:, pc2], alpha=0.9)
+
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
     ax.set_xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)', fontsize=20)
     ax.set_ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)', fontsize=20)
     ax.tick_params(axis='x', labelsize=16)
     ax.tick_params(axis='y', labelsize=16)
-    ax.set_title('2D Scores', fontsize = 16)
+    ax.set_title('2D Scores', fontsize=16)
 
     if labels is not None:
         filtered = filter_labels(scores, labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
             ax.text(x, y, label, fontsize=8, color='black')
 
-    return fig, ax
+    return fig, ax, scatter
 
-def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:float = 0.01, ax=None):
+def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:float = 0.01, classes: list = None, cmap:str='viridis', ax=None):
     """
     Plots the 2D loadings for the principal components.
     
@@ -151,13 +160,19 @@ def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:floa
 
     # Plot loadings as points
     loadings = pca_model.components_
-    ax.scatter(loadings[pc1], loadings[pc2], alpha=0.9)
+    # ax.scatter(loadings[pc1], loadings[pc2], alpha=0.9)
     
     if labels is not None:
         filtered = filter_labels(loadings, labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
             ax.text(x, y, label, fontsize=8, color='black')
 
+    # Plot with color if classes are provided
+    if classes is not None:
+        scatter = ax.scatter(loadings[pc1], loadings[pc2], c=classes, cmap=cmap, alpha=0.9)
+
+    else:
+        ax.scatter(loadings[pc1], loadings[pc2], alpha=0.9)
 
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)  # Horizontal axis
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)  # Vertical axis
@@ -167,9 +182,9 @@ def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:floa
     ax.tick_params(axis='y', labelsize=16)
     ax.set_title('2D Loadings', fontsize = 16)
     
-    return fig, ax
+    return fig, ax, scatter
 
-def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, label_dist:float = 1.0, size:int=20, ax=None):
+def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, label_dist:float = 1.0, score_classes: list = None, cmap:str='viridis', size:int=20, ax=None):
     """
     Combines score and loading plots into a single superimposed graph,
     scaling both scores and loadings to maintain their relative positions.
@@ -214,7 +229,13 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
 
 
     # Plot scores
-    ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=size,zorder=3) # Increased marker size
+    # ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=size,zorder=3) # Increased marker size
+    # Plot with color if classes are provided
+    if score_classes is not None:
+        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c=score_classes, cmap=cmap, label ='Scores',alpha=0.9, s=size,zorder=3)
+    else:
+        ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c = 'blue', label ='Scores',alpha=0.9, s=size,zorder=3)
+
     if score_labels is not None:
         filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
@@ -246,4 +267,4 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
 
     ax.legend(handles=handles, labels=labels)
     
-    return fig, ax
+    return fig, ax, scatter
