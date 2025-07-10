@@ -43,7 +43,7 @@ def test_loadings():
     return
     
 def test_biplot():
-    _,_, scatter = plot.biplot(X, pca, 1, 2, obs_l, var_l, size=5, score_classes=classes)
+    _,_, scatter = plot.biplot(X, pca, 1, 2, obs_l, var_l, size=50, score_classes=classes, loading_classes=var_l)
     plt.colorbar(scatter, )
     plt.show()
     return

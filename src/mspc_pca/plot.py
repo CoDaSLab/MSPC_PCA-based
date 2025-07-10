@@ -184,7 +184,16 @@ def loadings(pca_model, pc1: int, pc2: int, labels: list = None, label_dist:floa
     
     return fig, ax, scatter
 
-def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loading_labels: list = None, label_dist:float = 1.0, score_classes: list = None, cmap:str='viridis', size:int=20, ax=None):
+def biplot(data, pca_model, pc1: int, pc2: int,
+           score_labels: list = None,
+           loading_labels: list = None,
+           label_dist: float = 1.0,
+           score_classes: list = None,
+           loading_classes: list = None,
+           score_cmap: str = 'viridis',
+           loading_cmap: str = 'coolwarm',
+           size: int = 20,
+           ax=None):
     """
     Combines score and loading plots into a single superimposed graph,
     scaling both scores and loadings to maintain their relative positions.
@@ -198,73 +207,82 @@ def biplot(data, pca_model, pc1: int, pc2: int, score_labels: list = None, loadi
     :param ax: Optional matplotlib Axes object to plot on. If None, a new Figure and Axes will be created.
     :return: A tuple containing the matplotlib Figure (or None if 'ax' was provided) and Axes objects.
     """
-    pc1, pc2 = pc1-1, pc2-1 # Adjust to 0-based indexing for Python
+    pc1, pc2 = pc1 - 1, pc2 - 1  # Indexación 0-based
 
     scores = pca_model.fit_transform(data)
-    explained_variance = pca_model.explained_variance_ratio_ * 100  # Convert to percentage
+    explained_variance = pca_model.explained_variance_ratio_ * 100
 
-    # Create figure and axes if not provided
     if ax is None:
-        fig, ax = plt.subplots(figsize=(10, 8)) # Increased figsize for better visibility
+        fig, ax = plt.subplots(figsize=(10, 8))
     else:
         fig = None
 
     scores_scaled = scores / np.max(np.abs(scores), axis=0)
     loadings_scaled = pca_model.components_ / np.max(np.abs(pca_model.components_), axis=1)[:, np.newaxis]
 
-    # Plot loadings
-    # ax.scatter(loadings_scaled[pc1], loadings_scaled[pc2], alpha=0.5, label='Loadings', color='red')
+    # Colores para loadings si se provee loading_classes
+    if loading_classes is not None:
+        loading_colors = plt.cm.get_cmap(loading_cmap)((
+            np.array(loading_classes) - np.min(loading_classes)) /
+            (np.max(loading_classes) - np.min(loading_classes) + 1e-10))  # evitar división por cero
+    else:
+        loading_colors = ['red'] * loadings_scaled.shape[1]
+
+    # Flechas de loadings
+    for i in range(loadings_scaled.shape[1]):
+        ax.annotate(
+            '',
+            xy=(loadings_scaled[pc1, i], loadings_scaled[pc2, i]),
+            xytext=(0, 0),
+            arrowprops=dict(arrowstyle='->',
+                            color=loading_colors[i],
+                            linewidth=1,
+                            alpha=0.7)
+        )
+
+    # Etiquetas de loadings
     if loading_labels is not None:
         filtered = filter_labels(loadings_scaled.T, loading_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
             ax.text(x, y, label, fontsize=8, color='grey')
-    
-    for i in range(loadings_scaled.shape[1]):
-        ax.annotate(
-            '',  # No text
-            xy=(loadings_scaled[pc1, i], loadings_scaled[pc2, i]),  # Arrow tip (target)
-            xytext=(0, 0),  # Arrow start (origin)
-            arrowprops=dict(arrowstyle='->', color='red', linewidth=1, alpha=0.5)
-        )
 
-
-    # Plot scores
-    # ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], alpha=0.9, label='Scores', color='blue', s=size,zorder=3) # Increased marker size
-    # Plot with color if classes are provided
+    # Colores para scores
     if score_classes is not None:
-        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c=score_classes, cmap=cmap, label ='Scores',alpha=0.9, s=size,zorder=3)
+        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
+                             c=score_classes, cmap=score_cmap,
+                             label='Scores', alpha=0.9, s=size, zorder=3)
     else:
-        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2], c = 'blue', label ='Scores',alpha=0.9, s=size,zorder=3)
+        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
+                             c='blue', label='Scores', alpha=0.9, s=size, zorder=3)
 
+    # Etiquetas de scores
     if score_labels is not None:
         filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
             offset = 0.025
-            sign_x = x/np.abs(x)
-            sign_y = y/np.abs(y)
-            ax.text(x + offset*sign_x, y + offset*sign_y, label, 
+            sign_x = x / np.abs(x) if x != 0 else 1
+            sign_y = y / np.abs(y) if y != 0 else 1
+            ax.text(x + offset * sign_x, y + offset * sign_y, label,
                     fontsize=9, color='black', ha='center', va='center')
-            
 
+    # Ejes
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
-
     ax.set_xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)')
     ax.set_ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)')
-    # Coordenadas de scores y loadings
+
+    # Límites
     score_coords = np.column_stack((scores_scaled[:, pc1], scores_scaled[:, pc2]))
     loading_coords = np.column_stack((loadings_scaled[pc1], loadings_scaled[pc2]))
-
-    # Actualizar límites con ambos conjuntos
     all_coords = np.vstack((score_coords, loading_coords))
     ax.update_datalim(all_coords)
     ax.autoscale_view()
 
-    arrow_legend = Line2D([0], [0], color='red', lw=1, marker='>', markersize=6, label='Loadings (as arrows)')
+    # Leyenda
+    arrow_legend = Line2D([0], [0], color='grey', lw=1, marker='>', markersize=6, label='Loadings (as arrows)')
     handles, labels = ax.get_legend_handles_labels()
     handles.append(arrow_legend)
     labels.append('Loadings')
-
     ax.legend(handles=handles, labels=labels)
-    
+
     return fig, ax, scatter
