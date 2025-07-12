@@ -10,7 +10,7 @@ authors = [
 ]
 description = "PCA based MSPC implementation in Python."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 keywords = ["mspc", "pca", "python", "mspc-pca"] # Consistentemente usando guiones aquí también
 license = { text = "MIT License" }
 classifiers = [
