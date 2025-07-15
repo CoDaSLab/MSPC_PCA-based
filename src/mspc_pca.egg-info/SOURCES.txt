@@ -12,5 +12,6 @@ src/mspc_pca.egg-info/dependency_links.txt
 src/mspc_pca.egg-info/requires.txt
 src/mspc_pca.egg-info/top_level.txt
 tests/test0.py
+tests/test_DQ_plots.py
 tests/test_omeda.py
 tests/test_plots.py

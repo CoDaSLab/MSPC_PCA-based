@@ -1,17 +1,18 @@
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba_array
 from sklearn.decomposition import PCA
 
 def UCL_D(N, A, alpha=0.05, phase = 1):
     """
-    Calcula el UCL (umbral superior de control) para el estadístico D (Tracy et al., 1992).
+    Calculates the UCL (upper control limit) for the D statistic (Tracy et al., 1992).
     
-    :param N: Número de observaciones
-    :param A: Número de componentes principales retenidos
-    :param alpha: Nivel de significancia (default 0.05)
-    :param phase: Fase del control (1 o 2)
-    :return: UCL_D (umbral superior de control)
+    :param N: Number of observations
+    :param A: Number of principal components retained
+    :param alpha: Significance level (default 0.05)
+    :param phase: Control phase (1 or 2)
+    :return: UCL_D (upper control limit)
     """
     if phase == 1:
         beta_a = A / 2
@@ -32,23 +33,25 @@ def UCL_D(N, A, alpha=0.05, phase = 1):
 
         UCL_D = constant * f_percentile
     else:
-        raise ValueError("Parámetro 'phase' debe ser 1 o 2.")
+        raise ValueError("Parameter 'phase' must be 1 or 2.")
 
     return UCL_D
 
+
 def UCL_Q(E, alpha=0.05, type_q='Jackson'):
     """
-    Calcula el UCL (umbral superior de control) para el estadístico Q (SPE)
-    usando la aproximación de Box (1954) y Nomikos & MacGregor (1995)
-    ó alternativamente la aproximación de Jackson y Mudholkar (1979).
-    :param E: Residuos de la reconstrucción PCA
-    :param alpha: Nivel de significancia (default 0.05)
-    :param type_q: Tipo de aproximación ('Box' o 'Jackson')
-    :return: UCL_Q (umbral superior de control)
+    Calculates the UCL (upper control limit) for the Q statistic (SPE)
+    using the Box (1954) and Nomikos & MacGregor (1995) approach
+    or alternatively the Jackson and Mudholkar (1979) approach.
+
+    :param E: PCA reconstruction residuals
+    :param alpha: Significance level (default 0.05)
+    :param type_q: Type of approach ('Box' or 'Jackson')
+    :return: UCL_Q (upper control limit)
     """
     if type_q == 'Box':
         Q = np.sum(E**2, axis=1)
-        b = np.mean(Q)     
+        b = np.mean(Q)    
         v = np.var(Q, ddof=1)  
 
         g = v / (2 * b)
@@ -80,30 +83,33 @@ def UCL_Q(E, alpha=0.05, type_q='Jackson'):
         UCL_Q = theta_1 * (term_1 + term_2 + term_3)**(1/h_0)
 
     else:
-        raise ValueError("Tipo de Q no soportado. Usa 'Box' o 'Jackson'.")
+        raise ValueError("Unsupported Q type. Use 'Box' or 'Jackson'.")
     return UCL_Q
 
-def DyQ(X, n_components, preprocessing=2, alpha=0.05, type_q='Jackson', plot=True, logscale=False, percentile_threshold=False, event_index=None):
+
+def DQ(X, n_components, preprocessing=2, alpha=0.05, type_q='Jackson', plot=True, logscale=False, percentile_threshold=False, event_index=None):
     """
-    Calcula la distancia de Hotelling (D) y el error de predicción (Q) para cada observación.
-    :param X: Datos de entrada (numpy array)
-    :param n_components: Número de componentes principales a retener
-    :param preprocessing: Tipo de preprocesado a aplicar:
-        0: sin preprocesado
-        1: centrado
-        2: centrado y escalado (default)
-    :param alpha: Nivel de significancia (default 0.05)
-    :param type_q: Tipo de aproximación para Q ('Box' o 'Jackson', default 'Jackson')
-    :param plot: Si True, grafica los resultados
-    :param logscale: Si True, grafica los estadísticos en escala logarítmica
+    Calculates D-statistic and Q-statistic values for each observation.
+
+    :param X: Input data (numpy array)
+    :param n_components: Number of principal components to retain
+    :param preprocessing: Type of preprocessing to apply:
+        1: centering
+        2: centering and scaling (default)
+    :param alpha: Significance level (default 0.05)
+    :param type_q: Type of approach for Q ('Box' or 'Jackson', default 'Jackson')
+    :param plot: If True, plots the results
+    :param logscale: If True, plots the statistics on a logarithmic scale
+    :param percentile_threshold: If True, percentile `100 * (1-alpha)` is used as threshold
+    :param event_index: List of indices to highlight in the plot
     """
-    # Preprocesado
+    # Preprocessing
     if preprocessing == 1:
         mean = np.mean(X, axis=0)
         X_norm = X - mean
     elif preprocessing == 2:
         mean = np.mean(X, axis=0)
-        std = np.std(X, axis=0, ddof=1) # Corrección de Bessel, no debería afectar a los resultados pero es matemáticamente correcto
+        std = np.std(X, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
         X_norm = (X - mean) / std
     else:
         X_norm = X
@@ -122,7 +128,7 @@ def DyQ(X, n_components, preprocessing=2, alpha=0.05, type_q='Jackson', plot=Tru
 
     thresholds_D = []
     thresholds_Q = []
-    # Umbrales
+    # Thresholds
     if percentile_threshold:
         thresholds_D.append(np.percentile(D, 100 * (1 - alpha)))
         thresholds_Q.append(np.percentile(Q, 100 * (1 - alpha)))
@@ -137,79 +143,141 @@ def DyQ(X, n_components, preprocessing=2, alpha=0.05, type_q='Jackson', plot=Tru
             thresholds_Q.append(th_Q)
 
     if plot:
-        plot_DyQ(D, Q, thresholds_D, thresholds_Q, logscale=logscale, event_index=event_index)
+        plot_DQ(D, Q, thresholds_D, thresholds_Q, logscale=logscale, event_index=event_index)
     return D, Q, thresholds_D, thresholds_Q
 
-def plot_DyQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None):
+
+def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None, 
+             alpha=None, type_q='Jackson', labels=None, opacity=None, ax=None):
     """
-    :param D: vector de distancias de Hotelling
-    :param Q: vector de errores de predicción
-    :param threshold_D: umbral(es) para D puede ser escalar o lista
-    :param threshold_Q: umbral(es) para Q puede ser escalar o lista
-    :param logscale: Si True, grafica en escala logarítmica los estadísticos
-    :param event_index: Índice(s) de evento(s) a marcar en la gráfica (opcional)
-    Permite graficar uno o varios umbrales (threshold_D y threshold_Q ).
+    Plots D-statistic and Q-statistic values.
+    Highlights bars associated with `event_index` in red.
+
+    :param D: Vector of D values.
+    :param Q: Vector of Q values.
+    :param threshold_D: Threshold(s) for D-statistic. Can be a scalar or a list.
+    :param threshold_Q: Threshold(s) for Q-statistic. Can be a scalar or a list.
+    :param logscale: If True, apply a logarithmic scale to the y-axis. Defaults to False.
+    :param event_index: Optional list/array of indices to highlight in red. Defaults to None.
+    :param alpha: Optional list/array of alpha values corresponding to thresholds, used for labels.
+                  Defaults to None.
+    :param type_q: Type of Q calculation, used in Q threshold label. Defaults to 'Jackson'.
+    :param labels: Optional list of strings for x-axis tick labels. Defaults to None.
+    :param opacity: Optional list of opacity values for each bar. Defaults to None.
+    :param ax: Optional list or tuple of two matplotlib Axes objects ([ax_D, ax_Q]) to plot on.
+               If None, a new Figure and two Axes will be created. Defaults to None.
+    :return: A tuple (Figure, list_of_Axes).
     """
-    plt.figure(figsize=(12, 6))
-    plt.subplot(2, 1, 1)
-    if event_index is not None:
-        colors = ['red' if i in event_index else 'blue' for i in range(len(D))]
+
+    fig = None # Initialize fig to None, will be set if a new figure is created
+
+    if ax is None:
+        # Create a new figure and two subplots if no axes are provided
+        fig, (ax_d, ax_q) = plt.subplots(2, 1, figsize=(12, 8))
+    elif isinstance(ax, (list, tuple)) and len(ax) == 2:
+        # Use provided axes
+        ax_d, ax_q = ax[0], ax[1]
+        fig = ax_d.figure # Get the figure from the provided axes
     else:
-        colors = 'blue'
-    plt.bar(range(len(D)), D, color=colors, alpha=1, label='D (Distancia de Hotelling)')
-    # Soporta varios umbrales
+        raise ValueError("If 'ax' is provided, it must be a list or tuple of two matplotlib Axes objects.")
+
+    n_data = len(D)
+    x_indices = np.arange(n_data)
+
+    # --- Plotting D ---
+    # Determine colors for D plot
+    if event_index is not None:
+        colors_d = ['red' if i in event_index else 'blue' for i in range(n_data)]
+    else:
+        colors_d = 'blue'
+
+    # Add opacity to colors
+    if opacity is not None and len(opacity) == len(D):
+        colors_d = to_rgba_array(colors_d, alpha=opacity)
+    
+    ax_d.bar(x_indices, D, color=colors_d, label='D')
+
+    # Handle thresholds for D
     if np.isscalar(threshold_D):
-        plt.axhline(y=threshold_D, linestyle='--', label='Umbral D', color='red')
+        ax_d.axhline(y=threshold_D, linestyle='--', label='D threshold', color='red')
     else:
-        for th, a in zip(threshold_D, np.atleast_1d(getattr(threshold_D, 'alpha', [None]*len(threshold_D)))):
-            label = f'Umbral D α={a}' if a is not None else 'Umbral D'
-            plt.axhline(y=th, linestyle='--', label=label, color='red')
-    plt.title('Distancia de Hotelling (D)')
-    plt.ylabel('D')
-    if logscale:
-        plt.yscale('log')
-    plt.legend(loc='upper left')
-    plt.grid()
+        threshold_D = np.atleast_1d(threshold_D)
+        alpha_D = np.atleast_1d(alpha) if alpha is not None else [None] * len(threshold_D)
+        for i, th in enumerate(threshold_D):
+            label = f'D threshold $\\alpha$={alpha_D[i]}' if alpha_D[i] is not None else 'D threshold'
+            ax_d.axhline(y=th, linestyle='--', label=label, color='red')
 
-    plt.subplot(2, 1, 2)
+    ax_d.set_title("D-statistic")
+    ax_d.set_ylabel('D')
+    if logscale:
+        ax_d.set_yscale('log')
+    ax_d.legend(loc='upper left')
+    ax_d.grid(True)
+
+    # --- Plotting Q ---
+    # Determine colors for Q plot
     if event_index is not None:
-        colors = ['red' if i in event_index else 'green' for i in range(len(Q))]
+        colors_q = ['red' if i in event_index else 'green' for i in range(n_data)]
     else:
-        colors = 'green'
-    plt.bar(range(len(Q)), Q, color=colors, alpha=1, label='Q (Error de Predicción)')
-    if np.isscalar(threshold_Q):
-        plt.axhline(y=threshold_Q, linestyle='--', label='Umbral Q', color='red')
-    else:
-        for th, a in zip(threshold_Q, np.atleast_1d(getattr(threshold_Q, 'alpha', [None]*len(threshold_Q)))):
-            label = f'Umbral Q α={a}' if a is not None else 'Umbral Q'
-            plt.axhline(y=th, linestyle='--', label=label, color='red')
-    plt.title('Error de Predicción (Q)')
-    plt.ylabel('Q')
-    if logscale:
-        plt.yscale('log')
-    plt.legend(loc='upper left')
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
+        colors_q = 'green'
 
-def DyQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alpha=0.05, plot=False, logscale=False, event_index=None, percentile_threshold=False):
+    # Add opacity to colors
+    if opacity is not None and len(opacity) == len(Q):
+        colors_q = to_rgba_array(colors_q, alpha=opacity)
+
+    ax_q.bar(x_indices, Q, color=colors_q, label='Q')
+
+    # Handle thresholds for Q
+    if np.isscalar(threshold_Q):
+        ax_q.axhline(y=threshold_Q, linestyle='--', label='Q threshold', color='red')
+    else:
+        threshold_Q = np.atleast_1d(threshold_Q)
+        alpha_Q = np.atleast_1d(alpha) if alpha is not None else [None] * len(threshold_Q)
+        for i, th in enumerate(threshold_Q):
+            label = f'Q threshold ({type_q}) $\\alpha$={alpha_Q[i]}' if alpha_Q[i] is not None else 'Q threshold'
+            ax_q.axhline(y=th, linestyle='--', label=label, color='red')
+
+    ax_q.set_title('Q-statistic')
+    ax_q.set_ylabel('Q')
+    if logscale:
+        ax_q.set_yscale('log')
+    ax_q.legend(loc='upper left')
+    ax_q.grid(True)
+
+    # Apply x-axis labels if provided
+    if labels is not None:
+        if len(labels) != n_data:
+            print(f"Warning: Length of 'labels' ({len(labels)}) does not match the number of plotted data points ({n_data}). Labels will not be applied.")
+        else:
+            ax_d.set_xticks(x_indices)
+            ax_d.set_xticklabels(labels, rotation=45, ha='right')
+            ax_q.set_xticks(x_indices)
+            ax_q.set_xticklabels(labels, rotation=45, ha='right')
+            ax_q.tick_params(axis='x', which='major', pad=10)
+
+    return fig, [ax_d, ax_q]
+
+
+def DQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alpha=0.05, plot=False, 
+           logscale=False, event_index=None, percentile_threshold=False):
     """
-    Igual que DyQ, pero para train/test.
-    :param X_train: Datos de entrenamiento (numpy array)
-    :param X_test: Datos de prueba (numpy array)
-    :param n_components: Número de componentes principales a retener
-    :param preprocessing: Tipo de preprocesado a aplicar:
-        0: sin preprocesado
-        1: centrado
-        2: centrado y escalado (default)
-    :param type_q: Tipo de aproximación para Q ('Box' o 'Jackson', default 'Jackson')
-    :param alpha: Nivel(es) de significancia (default 0.05), puede ser un escalar o una lista
-    :param plot: Si True, grafica los resultados
-    :param logscale: Si True, grafica los estadísticos en escala logarítmica
-    :param event_index: Índice(s) de evento(s) a marcar en la gráfica
-    :param percentile_threshold: Si True, calcula los umbrales por percentil a partir de los datos de prueba
+    Same as DQ, but for train/test.
+
+    :param X_train: Training data (numpy array)
+    :param X_test: Test data (numpy array)
+    :param n_components: Number of principal components to retain
+    :param preprocessing: Type of preprocessing to apply:
+        1: centering
+        2: centering and scaling (default)
+    :param type_q: Type of approach for Q ('Box' or 'Jackson', default 'Jackson')
+    :param alpha: Significance level(s) (default 0.05), can be a scalar or a list
+    :param plot: If True, plots the results
+    :param logscale: If True, plots the statistics on a logarithmic scale
+    :param event_index: Index(es) of event(s) to mark on the plot
+    :param percentile_threshold: If True, percentile `100 * (1-alpha)` of training data 
+        is used as threshold
     """
-    # Preprocesado
+    # Preprocessing
     if preprocessing == 1:
         mean_train = np.mean(X_train, axis=0)
         X_train_norm = X_train - mean_train
@@ -229,7 +297,7 @@ def DyQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alp
     scores_test = pca.transform(X_test_norm)
 
     mu_t = np.mean(scores_train, axis=0)
-    std_t = np.std(scores_train, axis=0, ddof=1) # Corrección de Bessel, no debería afectar a los resultados pero es matemáticamente correcto
+    std_t = np.std(scores_train, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
     D_train = np.sum(((scores_train - mu_t) / std_t) ** 2, axis=1)
 
     X_train_norm_reconstructed = pca.inverse_transform(scores_train)
@@ -241,7 +309,7 @@ def DyQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alp
     residuals_test = X_test_norm - X_test_norm_reconstructed
     Q_test = np.sum(residuals_test ** 2, axis=1)
 
-    # Umbrales
+    # Thresholds
     if percentile_threshold:
         threshold_D = np.percentile(D_train, 100 * (1 - alpha))
         threshold_Q = np.percentile(Q_train, 100 * (1 - alpha))
@@ -260,73 +328,186 @@ def DyQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alp
         threshold_Q = thresholds_Q
 
     if plot:
-        plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alpha=[alpha] if np.isscalar(alpha) else alpha, type_q=type_q, logscale=logscale, event_index=event_index)
+        plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alpha=[alpha] if np.isscalar(alpha) else alpha, type_q=type_q, logscale=logscale, event_index=event_index)
 
     return D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q
 
-def plot_DyQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, alpha=None, type_q='Jackson', logscale=False, event_index=None):
-    """
-    Grafica los resultados de D y Q para train y test, soportando uno o varios umbrales.
-    Marca en rojo las barras asociadas a event_index.
-    """
-    D_all = np.concatenate([D_train, D_test])
-    Q_all = np.concatenate([Q_train, Q_test])
-    n_train = len(D_train)
 
-    plt.figure(figsize=(12, 6))
+def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, 
+                alpha=None, type_q='Jackson', logscale=False, event_index=None, 
+                labels=None, plot_train=True, opacity=None, ax=None):
+    """
+    Plots the D-statistic and Q-statistic results for
+    training and test datasets, supporting one or multiple thresholds.
+    Highlights bars associated with `event_index` in red.
 
-    # Gráfico de D
-    plt.subplot(2, 1, 1)
-    if event_index is not None:
-        colors = ['red' if i in event_index else ('blue' if i < n_train else 'yellow') for i in range(len(D_all))]
+    :param D_train: D-statistic for the training data.
+    :param Q_train: Q-statistic values for the training data.
+    :param D_test: D-statistic values for the test data.
+    :param Q_test: Q-statistic values for the test data.
+    :param threshold_D: Threshold(s) for D-statistic. Can be a scalar or a list.
+    :param threshold_Q: Threshold(s) for Q-statistic. Can be a scalar or a list.
+    :param alpha: Optional list/array of alpha values corresponding to thresholds, used for labels.
+                  Defaults to None.
+    :param type_q: Type of Q calculation, used in Q threshold label. Defaults to 'Jackson'.
+    :param logscale: If True, apply a logarithmic scale to the y-axis. Defaults to False.
+    :param event_index: Optional list/array of indices to highlight in red. Defaults to None.
+    :param labels: Optional list of strings for x-axis tick labels. Defaults to None.
+    :param plot_train: If True, both training and test data are plotted. If False, only
+                       test data is plotted. Defaults to True.
+    :param opacity: List of opacity values for each bar. Defaults to None.
+    :param ax: Optional list or tuple of two matplotlib Axes objects ([ax_D, ax_Q]) to plot on.
+               If None, a new Figure and two Axes will be created. Defaults to None.
+    :return: A tuple (Figure, list_of_Axes).
+    """
+
+    fig = None # Initialize fig to None, will be set if a new figure is created
+
+    if ax is None:
+        # Create a new figure and two subplots if no axes are provided
+        fig, (ax_d, ax_q) = plt.subplots(2, 1, figsize=(12, 8))
+    elif isinstance(ax, (list, tuple)) and len(ax) == 2:
+        # Use provided axes
+        ax_d, ax_q = ax[0], ax[1]
+        fig = ax_d.figure # Get the figure from the provided axes
     else:
-        colors = ['blue' if i < n_train else 'yellow' for i in range(len(D_all))]
-    
-    plt.bar(range(n_train), D_train, color=colors[:n_train], alpha=1, label='Train')
-    plt.bar(range(n_train, len(D_all)), D_test, color=colors[n_train:], alpha=1, label='Test')
+        raise ValueError("If 'ax' is provided, it must be a list or tuple of two matplotlib Axes objects.")
+
+    n_train = len(D_train)
+    n_test = len(D_test)
+
+    if plot_train:
+        # Concatenate train and test data for plotting
+        D_to_plot = np.concatenate([D_train, D_test])
+        Q_to_plot = np.concatenate([Q_train, Q_test])
+        n_data_to_plot = len(D_to_plot)
+        x_indices = np.arange(n_data_to_plot)
+
+        # Determine colors for D plot
+        if event_index is not None:
+            colors_d = ['red' if i in event_index else ('blue' if i < n_train else 'orange') for i in range(n_data_to_plot)]
+        else:
+            colors_d = ['blue' if i < n_train else 'orange' for i in range(n_data_to_plot)]
+        
+        # Add opacity to colors
+        if opacity is not None and len(opacity) == len(colors_d):
+            colors_d = to_rgba_array(colors_d, alpha=opacity)
+
+        # Plot D_train and D_test
+        ax_d.bar(np.arange(n_train), D_train, color=colors_d[:n_train], label='Train')
+        ax_d.bar(np.arange(n_train, n_data_to_plot), D_test, color=colors_d[n_train:], label='Test')
+        ax_d.axvline(x=n_train - 0.5, color='black', linestyle='--', label='Train/Test Split')
+
+        # Determine colors for Q plot
+        if event_index is not None:
+            colors_q = ['red' if i in event_index else ('green' if i < n_train else 'orange') for i in range(n_data_to_plot)]
+        else:
+            colors_q = ['green' if i < n_train else 'orange' for i in range(n_data_to_plot)]
+
+        # Add opacity to colors
+        if opacity is not None and len(opacity) == len(colors_q):
+            colors_q = to_rgba_array(colors_q, alpha=opacity)
+
+        # Plot Q_train and Q_test
+        ax_q.bar(np.arange(n_train), Q_train, color=colors_q[:n_train], label='Train')
+        ax_q.bar(np.arange(n_train, n_data_to_plot), Q_test, color=colors_q[n_train:], label='Test')
+        ax_q.axvline(x=n_train - 0.5, color='black', linestyle='--', label='Train/Test Split')
+
+    else: # Only plot test data
+        D_to_plot = D_test
+        Q_to_plot = Q_test
+        n_data_to_plot = n_test
+        x_indices = np.arange(n_data_to_plot)
+
+        # Adjust event_index to be relative to D_test/Q_test if plotting only test data
+        if event_index is not None and max(event_index) > n_test:
+            # Filter event_index to only include those relevant to the test set
+            # and adjust their values to be 0-indexed within the test set
+            adjusted_event_index = [idx - n_train for idx in event_index if idx >= n_train]
+        else:
+            adjusted_event_index = event_index
+        
+        # Determine colors for D plot (test data only)
+        if adjusted_event_index is not None:
+            colors_d = ['red' if i in adjusted_event_index else 'blue' for i in range(n_data_to_plot)]
+        else:
+            colors_d = ['blue'] * n_data_to_plot
+        
+        # Add opacity to colors
+        if opacity is not None:
+            if len(opacity) == len(colors_d):
+                colors_d = to_rgba_array(colors_d, alpha=opacity)
+            elif len(opacity) == n_train + n_test:
+                colors_d = to_rgba_array(colors_d, alpha=opacity[n_train:])
+
+        # Plot D_test
+        ax_d.bar(x_indices, D_to_plot, color=colors_d, label='Test')
+
+        # Determine colors for Q plot (test data only)
+        if adjusted_event_index is not None:
+            colors_q = ['red' if i in adjusted_event_index else 'green' for i in range(n_data_to_plot)]
+        else:
+            colors_q = ['green'] * n_data_to_plot
+        
+        # Add opacity to colors
+        if opacity is not None:
+            if len(opacity) == len(colors_q):
+                colors_q = to_rgba_array(colors_q, alpha=opacity)
+            elif len(opacity) == n_train + n_test:
+                colors_q = to_rgba_array(colors_q, alpha=opacity[n_train:])
+
+        # Plot Q_test
+        ax_q.bar(x_indices, Q_to_plot, color=colors_q, label='Test')
+
+    # --- Common plotting elements for D ---
+    ax_d.set_title("D-statistic")
+    ax_d.set_ylabel('D')
     if np.isscalar(threshold_D):
-        plt.axhline(y=threshold_D, linestyle='--', label='Umbral D', color='red')
+        ax_d.axhline(y=threshold_D, linestyle='--', label='D threshold', color='red')
     else:
         for i, th in enumerate(threshold_D):
-            label = f'Umbral D α={alpha[i]}' if alpha is not None else 'Umbral D'
-            plt.axhline(y=th, linestyle='--', label=label, color='red')
-    plt.title('Distancia de Hotelling (D)')
-    plt.ylabel('D')
-    plt.axvline(x=n_train-0.5, color='black', linestyle='--', label='Separador Train/Test')
+            label = f'D threshold $\\alpha$={alpha[i]}' if alpha is not None and i < len(alpha) else 'D threshold'
+            ax_d.axhline(y=th, linestyle='--', label=label, color='red')
     if logscale:
-        plt.yscale('log')
-    plt.legend()
-    plt.grid()
+        ax_d.set_yscale('log')
+    ax_d.legend(loc='upper left')
+    ax_d.grid(True)
 
-    # Gráfico de Q
-    plt.subplot(2, 1, 2)
-    if event_index is not None:
-        colors = ['red' if i in event_index else ('green' if i < n_train else 'yellow') for i in range(len(D_all))]
-    else:
-        colors = ['green' if i < n_train else 'yellow' for i in range(len(D_all))]
-
-    plt.bar(range(n_train), Q_train, color=colors[:n_train], alpha=1, label='Train')
-    plt.bar(range(n_train, len(Q_all)), Q_test, color=colors[n_train:], alpha=1, label='Test')
+    # --- Common plotting elements for Q ---
+    ax_q.set_title('Q-statistic')
+    ax_q.set_ylabel('Q')
     if np.isscalar(threshold_Q):
-        plt.axhline(y=threshold_Q, linestyle='--', label='Umbral Q', color='red')
+        ax_q.axhline(y=threshold_Q, linestyle='--', label='Q threshold', color='red')
     else:
         for i, th in enumerate(threshold_Q):
-            label = f'Umbral Q ({type_q}) α={alpha[i]}' if alpha is not None else 'Umbral Q'
-            plt.axhline(y=th, linestyle='--', label=label, color='red')
-    plt.title('Error de Predicción (Q)')
-    plt.ylabel('Q')
-    plt.axvline(x=n_train-0.5, color='black', linestyle='--', label='Separador Train/Test')
+            label = f'Q threshold ({type_q}) $\\alpha$={alpha[i]}' if alpha is not None and i < len(alpha) else 'Q threshold'
+            ax_q.axhline(y=th, linestyle='--', label=label, color='red')
     if logscale:
-        plt.yscale('log')
-    plt.legend()
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
+        ax_q.set_yscale('log')
+    ax_q.legend(loc='upper left')
+    ax_q.grid(True)
+
+    # Apply x-axis labels if provided
+    if labels is not None:
+        if len(labels) == n_train + n_test and plot_train == False:
+                labels = labels[n_train:]
+        
+        if len(labels) != n_data_to_plot:
+            print(f"Warning: Length of 'labels' ({len(labels)}) does not match the number of plotted data points ({n_data_to_plot}). Labels will not be applied.")
+        else:
+            ax_d.set_xticks(x_indices)
+            ax_d.set_xticklabels(labels, rotation=45, ha='right') # Rotate for better visibility
+            ax_q.set_xticks(x_indices)
+            ax_q.set_xticklabels(labels, rotation=45, ha='right')
+            ax_q.tick_params(axis='x', which='major', pad=10) # Add some padding for rotated labels
+
+    return fig, [ax_d, ax_q]
+
 
 if __name__ == "__main__":
     import matlab.engine
 
-    def DyQ_tt_MEDA(train, test, n_components, preprocessing = 0, alpha = 0.05, plot = False):
+    def DQ_tt_MEDA(train, test, n_components, preprocessing = 0, alpha = 0.05, plot = False):
         eng = matlab.engine.start_matlab() 
 
         result = eng.mspcPca(
@@ -348,7 +529,7 @@ if __name__ == "__main__":
 
         return python_result
         
-    def DyQ_MEDA(X, n_components, preprocessing = 0, alpha = 0.05, plot = False):
+    def DQ_MEDA(X, n_components, preprocessing = 0, alpha = 0.05, plot = False):
         eng = matlab.engine.start_matlab() 
 
         result = eng.mspcPca(
@@ -415,9 +596,9 @@ if __name__ == "__main__":
     def test_thresholds(dist, n_samples=200, n_features=10, n_components=2, preprocessing=1, alphas=[0.05, 0.01]):
         X = random_X((n_samples, n_features), dist=dist, seed=42)
         # Python
-        result_py = DyQ(X, n_components, preprocessing, alpha=alphas, plot=False)
+        result_py = DQ(X, n_components, preprocessing, alpha=alphas, plot=False)
         # MATLAB
-        result_matlab = DyQ_MEDA(X, n_components, preprocessing, alpha=alphas, plot=False)
+        result_matlab = DQ_MEDA(X, n_components, preprocessing, alpha=alphas, plot=False)
         # Compara solo los umbrales
         diffs_D = np.abs(np.array(result_py[-2]) - np.array(result_matlab[-2]))
         diffs_Q = np.abs(np.array(result_py[-1]) - np.array(result_matlab[-1]))

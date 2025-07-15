@@ -1,9 +1,6 @@
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-
 import numpy as np
-from mspc_pca import pca
-from mspc_pca.omeda import omeda
+from src.mspc_pca import pca
+from src.mspc_pca.omeda import omeda
 from numpy.testing import assert_allclose
 
 def test_omeda_with_anomalous_observation():
