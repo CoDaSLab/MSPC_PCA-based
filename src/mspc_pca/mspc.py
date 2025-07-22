@@ -490,7 +490,7 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
     # Apply x-axis labels if provided
     if labels is not None:
         if len(labels) == n_train + n_test and plot_train == False:
-                labels = labels[n_train:]
+            labels = labels[n_train:]
         
         if len(labels) != n_data_to_plot:
             print(f"Warning: Length of 'labels' ({len(labels)}) does not match the number of plotted data points ({n_data_to_plot}). Labels will not be applied.")

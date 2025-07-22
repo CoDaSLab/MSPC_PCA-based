@@ -2,6 +2,7 @@ import numpy as np
 from src.mspc_pca import pca
 from src.mspc_pca.omeda import omeda
 from numpy.testing import assert_allclose
+import matplotlib.pyplot as plt
 
 def test_omeda_with_anomalous_observation():
     # Simulate example data
@@ -26,7 +27,7 @@ def test_omeda_with_anomalous_observation():
     dummy[0] = 1
 
     # OMEDA
-    omeda_vec = omeda(
+    omeda_vec, _, _ = omeda(
         Xcs,
         dummy,
         loadings[:, :2],
@@ -34,6 +35,8 @@ def test_omeda_with_anomalous_observation():
         var_classes=["a", "a", "b", "b", "c", "b", "a", "c", "c", "b"],
         title="First obs vs. the others"
     )
+    plt.tight_layout()
+    plt.show()
 
     # Expected output vector (from known result)
     expected_vec = np.array([
