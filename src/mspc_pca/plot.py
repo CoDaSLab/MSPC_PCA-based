@@ -226,7 +226,11 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     loads_dist = (loadings_scaled[pc1,:]**2+loadings_scaled[pc2,:]**2)
     max_load = np.max(loads_dist)
     threshold_dist = loading_percentile * max_load
-    mask = loads_dist >= threshold_dist
+    if threshold_dist >= 0:
+        mask = loads_dist >= threshold_dist
+    else:
+        mask = loads_dist <= np.abs(threshold_dist)
+
     loadings_scaled_masked = loadings_scaled[:,mask]
 
     # Color loadings
