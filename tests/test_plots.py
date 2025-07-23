@@ -10,9 +10,9 @@ data[:, 1] = data[:, 1] - data[:, 3] * 1.5
 
 data[:,4] = data[:,4]*5
 
-obs_l = np.arange(50)
-classes = np.arange(50)
-var_l = np.arange(10)
+obs_l = np.arange(50).tolist()
+classes = np.arange(50).tolist()
+var_l = np.arange(10).tolist()
 
 # Normalize the data
 scaler = StandardScaler(with_std=False)
@@ -44,7 +44,7 @@ def test_loadings():
     
 def test_biplot():
     _,_, scatter = plot.biplot(X, pca, 1, 2, obs_l, var_l, size=50, score_classes=classes, loading_classes=var_l,
-                               loading_percentile=.5)
+    loading_percentile=.5)
 
     plt.colorbar(scatter, )
     plt.show()

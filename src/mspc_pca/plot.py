@@ -210,6 +210,9 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     """
     pc1, pc2 = pc1 - 1, pc2 - 1  # Indexación 0-based
 
+    score_labels = np.array(score_labels)
+    loading_labels = np.array(loading_labels)
+
     scores = pca_model.fit_transform(data)
     explained_variance = pca_model.explained_variance_ratio_ * 100
 
