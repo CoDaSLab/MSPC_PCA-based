@@ -224,20 +224,21 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     max_load = np.max(loads_dist)
     threshold_dist = loading_percentile * max_load
     mask = loads_dist >= threshold_dist
+    loadings_scaled_masked = loadings_scaled[:,mask]
 
-    # Colores para loadings si se provee loading_classes
+    # Color loadings
     if loading_classes is not None:
         loading_colors = plt.cm.get_cmap(loading_cmap)((
             np.array(loading_classes) - np.min(loading_classes)) /
-            (np.max(loading_classes) - np.min(loading_classes) + 1e-10))  # evitar división por cero
+            (np.max(loading_classes) - np.min(loading_classes)))
     else:
         loading_colors = ['red'] * loadings_scaled.shape[1]
 
-    # Flechas de loadings
-    for i in range(loadings_scaled[:,mask].shape[1]):
+    # Loadings arrows
+    for i in range(loadings_scaled_masked.shape[1]):
         ax.annotate(
             '',
-            xy=(loadings_scaled[pc1, i], loadings_scaled[pc2, i]),
+            xy=(loadings_scaled_masked[pc1, i], loadings_scaled_masked[pc2, i]),
             xytext=(0, 0),
             arrowprops=dict(arrowstyle='->',
                             color=loading_colors[i],
@@ -245,13 +246,13 @@ def biplot(data, pca_model, pc1: int, pc2: int,
                             alpha=0.7)
         )
 
-    # Etiquetas de loadings
+    # Loading labels
     if loading_labels is not None:
-        filtered = filter_labels(loadings_scaled.T, loading_labels, pc1, pc2, min_dist=label_dist)
+        filtered = filter_labels(loadings_scaled_masked.T, loading_labels[mask], pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
             ax.text(x, y, label, fontsize=8, color='grey')
 
-    # Colores para scores
+    # Scores colors
     if score_classes is not None:
         scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
                              c=score_classes, cmap=score_cmap,
@@ -260,7 +261,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
                              c='blue', label='Scores', alpha=0.9, s=size, zorder=3)
 
-    # Etiquetas de scores
+    # Scores labels
     if score_labels is not None:
         filtered = filter_labels(scores_scaled, score_labels, pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
@@ -270,20 +271,18 @@ def biplot(data, pca_model, pc1: int, pc2: int,
             ax.text(x + offset * sign_x, y + offset * sign_y, label,
                     fontsize=9, color='black', ha='center', va='center')
 
-    # Ejes
     ax.axhline(0, color='black', linestyle='--', linewidth=0.8)
     ax.axvline(0, color='black', linestyle='--', linewidth=0.8)
     ax.set_xlabel(f'PC{pc1+1} ({explained_variance[pc1]:.2f}%)')
     ax.set_ylabel(f'PC{pc2+1} ({explained_variance[pc2]:.2f}%)')
 
-    # Límites
+    # Limits
     score_coords = np.column_stack((scores_scaled[:, pc1], scores_scaled[:, pc2]))
-    loading_coords = np.column_stack((loadings_scaled[pc1], loadings_scaled[pc2]))
+    loading_coords = np.column_stack((loadings_scaled_masked[pc1], loadings_scaled_masked[pc2]))
     all_coords = np.vstack((score_coords, loading_coords))
     ax.update_datalim(all_coords)
     ax.autoscale_view()
 
-    # Leyenda
     arrow_legend = Line2D([0], [0], color='grey', lw=1, marker='>', markersize=6, label='Loadings (as arrows)')
     handles, labels = ax.get_legend_handles_labels()
     handles.append(arrow_legend)
