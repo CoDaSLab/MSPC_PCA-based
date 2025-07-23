@@ -193,6 +193,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
            score_cmap: str = 'viridis',
            loading_cmap: str = 'coolwarm',
            size: int = 20,
+           loading_percentile:float = 0.10,
            ax=None):
     """
     Combines score and loading plots into a single superimposed graph,
@@ -219,6 +220,10 @@ def biplot(data, pca_model, pc1: int, pc2: int,
 
     scores_scaled = scores / np.max(np.abs(scores), axis=0)
     loadings_scaled = pca_model.components_ / np.max(np.abs(pca_model.components_), axis=1)[:, np.newaxis]
+    loads_dist = (loadings_scaled[pc1,:]**2+loadings_scaled[pc2,:]**2)
+    max_load = np.max(loads_dist)
+    threshold_dist = loading_percentile * max_load
+    mask = loads_dist >= threshold_dist
 
     # Colores para loadings si se provee loading_classes
     if loading_classes is not None:
@@ -229,7 +234,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         loading_colors = ['red'] * loadings_scaled.shape[1]
 
     # Flechas de loadings
-    for i in range(loadings_scaled.shape[1]):
+    for i in range(loadings_scaled[:,mask].shape[1]):
         ax.annotate(
             '',
             xy=(loadings_scaled[pc1, i], loadings_scaled[pc2, i]),
