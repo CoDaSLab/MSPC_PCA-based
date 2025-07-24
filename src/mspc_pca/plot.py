@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba_array
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.cm import ScalarMappable
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import pairwise_distances
@@ -219,7 +222,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 8))
     else:
-        fig = None
+        fig = ax.figure
 
     scores_scaled = scores / np.max(np.abs(scores), axis=0)
     loadings_scaled = pca_model.components_ / np.max(np.abs(pca_model.components_), axis=1)[:, np.newaxis]
@@ -235,11 +238,28 @@ def biplot(data, pca_model, pc1: int, pc2: int,
 
     # Color loadings
     if loading_classes is not None:
-        loading_colors = plt.cm.get_cmap(loading_cmap)((
-            np.array(loading_classes) - np.min(loading_classes)) /
-            (np.max(loading_classes) - np.min(loading_classes)))
+        if np.issubdtype(np.array(loading_classes).dtype, np.number):
+            loading_classes_type = 'numeric'
+            # Numerical classes: Normalize and map to colormap
+            loading_norm = plt.Normalize(vmin=np.min(loading_classes), vmax=np.max(loading_classes))
+            loading_colors = plt.get_cmap(loading_cmap)(loading_norm(loading_classes))
+        else:
+            # Categorical classes
+            loading_classes_type = 'categorical'
+            unique_loading_classes = np.unique(loading_classes)
+            num_unique_loading_classes = len(unique_loading_classes)
+            cmap = plt.get_cmap(loading_cmap, num_unique_loading_classes)
+            category_colors = {cls: cmap(i) for i, cls in enumerate(unique_loading_classes)}
+            
+            # Assign colors to each loading based on its class
+            loading_colors = np.array([category_colors[cls] for cls in loading_classes])
     else:
+        loading_classes_type = 'categorical'
+        loading_classes = ['Loadings'] * loadings_scaled.shape[1]
+        unique_loading_classes = ['Loadings']
+        # Default to red if no loading_classes are provided
         loading_colors = ['red'] * loadings_scaled.shape[1]
+        loading_colors = to_rgba_array(loading_colors)
 
     # Loadings arrows
     for i in range(loadings_scaled_masked.shape[1]):
@@ -259,14 +279,45 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         for x, y, label in filtered:
             ax.text(x, y, label, fontsize=8, color='grey')
 
-    # Scores colors
+    # Score colors
     if score_classes is not None:
-        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
-                             c=score_classes, cmap=score_cmap,
-                             label='Scores', alpha=0.9, s=size, zorder=3)
+        if np.issubdtype(np.array(score_classes).dtype, np.number):
+            score_classes_type = 'numeric'
+            # Numerical classes: Normalize and map to colormap
+            score_norm = plt.Normalize(vmin=np.min(score_classes), vmax=np.max(score_classes))
+            score_colors = plt.get_cmap(score_cmap)(score_norm(score_classes))
+        else:
+            # Categorical classes
+            score_classes_type = 'categorical'
+            unique_score_classes = np.unique(score_classes)
+            num_unique_score_classes = len(unique_score_classes)
+            cmap = plt.get_cmap(score_cmap, num_unique_score_classes)
+            category_colors = {cls: cmap(i) for i, cls in enumerate(unique_score_classes)}
+            
+            # Assign colors to each score based on its class
+            score_colors = np.array([category_colors[cls] for cls in score_classes])
     else:
+        score_classes_type = 'categorical'
+        # Default to blue if no score_classes are provided
+        score_classes = ['Scores'] * scores_scaled.shape[0]
+        unique_score_classes = ['Scores']
+        score_colors = ['blue'] * scores_scaled.shape[0]
+        score_colors = to_rgba_array(score_colors)
+        
+    # Plot scores
+    if score_classes_type == 'numeric':
         scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
-                             c='blue', label='Scores', alpha=0.9, s=size, zorder=3)
+                                c=score_colors, alpha=0.9, s=size, zorder=3)
+        # Colorbar
+        sm = ScalarMappable(cmap=plt.get_cmap(score_cmap), norm=score_norm)
+        cbar = fig.colorbar(sm, ax=ax, orientation='vertical', pad=0.075)
+        cbar.set_label('Observation class')
+
+    elif score_classes_type == 'categorical':
+        for i, cls in enumerate(unique_score_classes):
+            class_idx = (np.array(score_classes) == cls)
+            scatter = ax.scatter(scores_scaled[class_idx, pc1], scores_scaled[class_idx, pc2],
+                                c=score_colors[class_idx], label=cls, alpha=0.9, s=size, zorder=3)
 
     # Scores labels
     if score_labels is not None:
@@ -289,11 +340,35 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     all_coords = np.vstack((score_coords, loading_coords))
     ax.update_datalim(all_coords)
     ax.autoscale_view()
-
-    arrow_legend = Line2D([0], [0], color='grey', lw=1, marker='>', markersize=6, label='Loadings (as arrows)')
+    
+    # Arrows in the legend
+    arrow_legends = []
     handles, labels = ax.get_legend_handles_labels()
-    handles.append(arrow_legend)
-    labels.append('Loadings')
-    ax.legend(handles=handles, labels=labels)
+    if loading_classes_type == 'numeric':
+        sm2 = ScalarMappable(cmap=plt.get_cmap(loading_cmap), norm=loading_norm)
+
+        # Add colorbar for loadings
+        if score_classes_type == 'numeric':
+            divider2 = make_axes_locatable(ax)
+            cax2 = divider2.append_axes("right", size='5%', pad=0.1)
+            cbar2 = fig.colorbar(sm2, cax=cax2, orientation='vertical')
+        else:
+            cbar2 = fig.colorbar(sm2, ax=ax, orientation='vertical', pad=0.075)
+        
+        cbar2.set_label('Variable class')
+
+        # Add loadings classes to legend
+        arrow_legends.append(Line2D([0], [0], color='grey', lw=1, marker='>', markersize=6, label='Loadings (as arrows)'))
+        labels.append('Loadings')
+    elif loading_classes_type == 'categorical':
+        for i, cls in enumerate(unique_loading_classes):
+            class_idx = (np.array(loading_classes) == cls)
+            print(class_idx)
+            arrow_legends.append(Line2D([0], [0], color=loading_colors[class_idx, :][0], lw=1, marker='>', markersize=6, label=cls))
+            labels.append(cls)
+            
+    handles.extend(arrow_legends)
+    
+    ax.legend(handles=handles, labels=labels, loc="upper right")
 
     return fig, ax, scatter
