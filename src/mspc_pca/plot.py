@@ -363,7 +363,6 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     elif loading_classes_type == 'categorical':
         for i, cls in enumerate(unique_loading_classes):
             class_idx = (np.array(loading_classes) == cls)
-            print(class_idx)
             arrow_legends.append(Line2D([0], [0], color=loading_colors[class_idx, :][0], lw=1, marker='>', markersize=6, label=cls))
             labels.append(cls)
             
