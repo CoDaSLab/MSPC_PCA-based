@@ -73,7 +73,7 @@ def test_biplot_cat_cat():
                                 size=50, 
                                 score_classes=classes_cat, 
                                 loading_classes=var_classes_cat,
-                                loading_percentile=+.25)
+                                loading_percentile=0)
     ax.set_title("Biplot: Categorical Score & Loading Classes")
     plt.show()
 

@@ -238,27 +238,28 @@ def biplot(data, pca_model, pc1: int, pc2: int,
 
     # Color loadings
     if loading_classes is not None:
-        if np.issubdtype(np.array(loading_classes).dtype, np.number):
+        loading_classes_masked = np.array(loading_classes)[mask]
+        if np.issubdtype(np.array(loading_classes_masked).dtype, np.number):
             loading_classes_type = 'numeric'
             # Numerical classes: Normalize and map to colormap
-            loading_norm = plt.Normalize(vmin=np.min(loading_classes), vmax=np.max(loading_classes))
-            loading_colors = plt.get_cmap(loading_cmap)(loading_norm(loading_classes))
+            loading_norm = plt.Normalize(vmin=np.min(loading_classes_masked), vmax=np.max(loading_classes_masked))
+            loading_colors = plt.get_cmap(loading_cmap)(loading_norm(loading_classes_masked))
         else:
             # Categorical classes
             loading_classes_type = 'categorical'
-            unique_loading_classes = np.unique(loading_classes)
+            unique_loading_classes = np.unique(loading_classes_masked)
             num_unique_loading_classes = len(unique_loading_classes)
             cmap = plt.get_cmap(loading_cmap, num_unique_loading_classes)
             category_colors = {cls: cmap(i) for i, cls in enumerate(unique_loading_classes)}
             
             # Assign colors to each loading based on its class
-            loading_colors = np.array([category_colors[cls] for cls in loading_classes])
+            loading_colors = np.array([category_colors[cls] for cls in loading_classes_masked])
     else:
         loading_classes_type = 'categorical'
-        loading_classes = ['Loadings'] * loadings_scaled.shape[1]
+        loading_classes_masked = ['Loadings'] * loadings_scaled_masked.shape[1]
         unique_loading_classes = ['Loadings']
         # Default to red if no loading_classes are provided
-        loading_colors = ['red'] * loadings_scaled.shape[1]
+        loading_colors = ['red'] * loadings_scaled_masked.shape[1]
         loading_colors = to_rgba_array(loading_colors)
 
     # Loadings arrows
@@ -362,7 +363,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         labels.append('Loadings')
     elif loading_classes_type == 'categorical':
         for i, cls in enumerate(unique_loading_classes):
-            class_idx = (np.array(loading_classes) == cls)
+            class_idx = (np.array(loading_classes_masked) == cls)
             arrow_legends.append(Line2D([0], [0], color=loading_colors[class_idx, :][0], lw=1, marker='>', markersize=6, label=cls))
             labels.append(cls)
             
