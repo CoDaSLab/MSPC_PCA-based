@@ -168,6 +168,8 @@ def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None,
                If None, a new Figure and two Axes will be created. Defaults to None.
     :return: A tuple (Figure, list_of_Axes).
     """
+    if isinstance(event_index, int):
+        event_index = [event_index]
 
     fig = None # Initialize fig to None, will be set if a new figure is created
 
@@ -360,7 +362,9 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
                If None, a new Figure and two Axes will be created. Defaults to None.
     :return: A tuple (Figure, list_of_Axes).
     """
-
+    if isinstance(event_index, int):
+        event_index = [event_index]
+        
     fig = None # Initialize fig to None, will be set if a new figure is created
 
     if ax is None:

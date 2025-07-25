@@ -196,6 +196,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
            score_cmap: str = 'viridis',
            loading_cmap: str = 'coolwarm',
            size: int = 20,
+           markers: list = None,
            loading_percentile:float = 0.10,
            ax=None):
     """
@@ -278,7 +279,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     if loading_labels is not None:
         filtered = filter_labels(loadings_scaled_masked.T, loading_labels[mask], pc1, pc2, min_dist=label_dist)
         for x, y, label in filtered:
-            ax.text(x, y, label, fontsize=8, color='grey')
+            ax.text(x, y, label, fontsize=9, color="#242424")
 
     # Score colors
     if score_classes is not None:
@@ -305,20 +306,33 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         score_colors = ['blue'] * scores_scaled.shape[0]
         score_colors = to_rgba_array(score_colors)
         
+    # Set markers
+    if markers is None:
+        markers = ['o'] * scores_scaled.shape[0]
+    unique_markers = np.unique(markers)
+
     # Plot scores
     if score_classes_type == 'numeric':
-        scatter = ax.scatter(scores_scaled[:, pc1], scores_scaled[:, pc2],
-                                c=score_colors, alpha=0.9, s=size, zorder=3)
+        for marker in unique_markers:
+            marker_idx = (np.array(markers) == marker)
+            scatter = ax.scatter(scores_scaled[marker_idx, pc1], scores_scaled[marker_idx, pc2],
+                                    c=score_colors[marker_idx], alpha=0.9, s=size, marker=marker, zorder=3)
         # Colorbar
         sm = ScalarMappable(cmap=plt.get_cmap(score_cmap), norm=score_norm)
         cbar = fig.colorbar(sm, ax=ax, orientation='vertical', pad=0.075)
         cbar.set_label('Observation class')
 
     elif score_classes_type == 'categorical':
-        for i, cls in enumerate(unique_score_classes):
+        for cls in unique_score_classes:
             class_idx = (np.array(score_classes) == cls)
-            scatter = ax.scatter(scores_scaled[class_idx, pc1], scores_scaled[class_idx, pc2],
-                                c=score_colors[class_idx], label=cls, alpha=0.9, s=size, zorder=3)
+            plot_label = True
+            for marker in unique_markers:
+                marker_idx = (np.array(markers) == marker) & class_idx
+                if np.any(marker_idx):
+                    scatter = ax.scatter(scores_scaled[marker_idx, pc1], scores_scaled[marker_idx, pc2],
+                                        c=score_colors[marker_idx], label=cls if plot_label else None,
+                                        alpha=0.9, s=size, marker=marker, zorder=3)
+                plot_label = False
 
     # Scores labels
     if score_labels is not None:
@@ -358,9 +372,6 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         
         cbar2.set_label('Variable class')
 
-        # Add loadings classes to legend
-        arrow_legends.append(Line2D([0], [0], color='grey', lw=1, marker='>', markersize=6, label='Loadings (as arrows)'))
-        labels.append('Loadings')
     elif loading_classes_type == 'categorical':
         for i, cls in enumerate(unique_loading_classes):
             class_idx = (np.array(loading_classes_masked) == cls)
@@ -368,7 +379,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
             labels.append(cls)
             
     handles.extend(arrow_legends)
-    
-    ax.legend(handles=handles, labels=labels, loc="upper right")
+    if len(handles) > 0:
+        ax.legend(handles=handles, labels=labels, loc="upper right")
 
     return fig, ax, scatter

@@ -18,6 +18,8 @@ var_l = [f'Var_{i}' for i in range(10)] # Categorical variable labels
 var_classes_num = np.arange(10).tolist() # Numerical classes for loadings
 var_classes_cat = [f'Type_{i%3}' for i in range(10)] # Categorical classes for loadings
 
+markers = np.repeat(['s', 'o', 'p', '^', 'd'], 10)
+
 # Normalize the data
 scaler = StandardScaler(with_std=False)
 X = scaler.fit_transform(data)
@@ -48,7 +50,7 @@ def test_loadings():
     
 def test_biplot_no_classes():
     """Test biplot with no classes."""
-    _,ax, scatter = plot.biplot(X, pca, 1, 2, obs_l, var_l, size=50, loading_percentile=-.25)
+    _,ax, scatter = plot.biplot(X, pca, 1, 2, obs_l, var_l, size=50, loading_percentile=0)
     ax.set_title("Biplot: No Score & Loading Classes")
     plt.show()
     return
@@ -61,20 +63,45 @@ def test_biplot_num_num():
                                 size=50, 
                                 score_classes=classes_num, 
                                 loading_classes=var_classes_num,
+                                markers=markers,
                                 loading_percentile=-.25)
     ax.set_title("Biplot: Numerical Score & Loading Classes")
     plt.show()
 
 def test_biplot_cat_cat():
     """Test biplot with categorical score_classes and categorical loading_classes."""
+    from matplotlib.lines import Line2D
+
     fig, ax, scatter = plot.biplot(X, pca, 1, 2, 
                                 score_labels=obs_l, 
                                 loading_labels=var_l, 
                                 size=50, 
                                 score_classes=classes_cat, 
                                 loading_classes=var_classes_cat,
+                                markers=markers,
                                 loading_percentile=0)
     ax.set_title("Biplot: Categorical Score & Loading Classes")
+
+    # Add second legend
+    legend1 = ax.get_legend()
+    ax.add_artist(legend1)
+    ax.legend(loc='lower right', title='Clases')
+
+    legend_elements = [
+    Line2D([0], [0], marker='s', color='w', label='Square',
+           markerfacecolor='blue', markersize=10),
+    Line2D([0], [0], marker='o', color='w', label='Circle',
+           markerfacecolor='blue', markersize=10),
+    Line2D([0], [0], marker='p', color='w', label='Pentagon',
+           markerfacecolor='blue', markersize=10),
+    Line2D([0], [0], marker='d', color='w', label='Diamond',
+           markerfacecolor='blue', markersize=10),
+    Line2D([0], [0], marker='^', color='w', label='Triangle',
+           markerfacecolor='blue', markersize=10)
+    ]
+
+    legend2 = ax.legend(handles=legend_elements, title="Markers", loc="upper left")
+    ax.add_artist(legend2)
     plt.show()
 
 def test_biplot_num_cat():
@@ -85,6 +112,7 @@ def test_biplot_num_cat():
                                 size=50, 
                                 score_classes=classes_num, 
                                 loading_classes=var_classes_cat,
+                                markers=markers,
                                 loading_cmap="rainbow",
                                 loading_percentile=-.25)
     ax.set_title("Biplot: Numerical Score Classes, Categorical Loading Classes")
@@ -100,6 +128,7 @@ def test_biplot_cat_num():
                                 size=50, 
                                 score_classes=classes_cat, 
                                 loading_classes=var_classes_num,
+                                markers=markers,
                                 loading_percentile=-.25)
     ax.set_title("Biplot: Categorical Score Classes, Numerical Loading Classes")
     plt.show()
