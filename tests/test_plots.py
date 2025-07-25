@@ -18,7 +18,8 @@ var_l = [f'Var_{i}' for i in range(10)] # Categorical variable labels
 var_classes_num = np.arange(10).tolist() # Numerical classes for loadings
 var_classes_cat = [f'Type_{i%3}' for i in range(10)] # Categorical classes for loadings
 
-markers = np.repeat(['s', 'o', 'p', '^', 'd'], 10)
+marker_types = ['s', 'o', 'p', '^', 'd']
+markers = np.random.choice(marker_types, size=50, replace=True)
 
 # Normalize the data
 scaler = StandardScaler(with_std=False)
@@ -85,7 +86,6 @@ def test_biplot_cat_cat():
     # Add second legend
     legend1 = ax.get_legend()
     ax.add_artist(legend1)
-    ax.legend(loc='lower right', title='Clases')
 
     legend_elements = [
     Line2D([0], [0], marker='s', color='w', label='Square',

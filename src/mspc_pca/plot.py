@@ -332,7 +332,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
                     scatter = ax.scatter(scores_scaled[marker_idx, pc1], scores_scaled[marker_idx, pc2],
                                         c=score_colors[marker_idx], label=cls if plot_label else None,
                                         alpha=0.9, s=size, marker=marker, zorder=3)
-                plot_label = False
+                    plot_label = False
 
     # Scores labels
     if score_labels is not None:
