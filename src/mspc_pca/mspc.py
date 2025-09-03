@@ -508,6 +508,58 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
     return fig, [ax_d, ax_q]
 
 
+
+
+
+
+def train_params(X_train:np.array, n_components:int, preprocessing:int=2):
+    """
+    :param X_train: Training data (numpy array)
+    :param X_test: Test data (numpy array)
+    :param n_components: Number of principal components to retain
+    :param preprocessing: Type of preprocessing to apply:
+        1: centering
+        2: centering and scaling (default)
+    """
+    # Preprocessing
+    if preprocessing == 1:
+        mean_train = np.mean(X_train, axis=0)
+        X_train_norm = X_train - mean_train
+    elif preprocessing == 2:
+        mean_train = np.mean(X_train, axis=0)
+        std_train = np.std(X_train, axis=0, ddof=1)
+        X_train_norm = (X_train - mean_train) / std_train
+    else:
+        X_train_norm = X_train
+
+    # PCA
+    pca = PCA(n_components=n_components)
+    scores_train = pca.fit_transform(X_train_norm)
+
+    mu_t = np.mean(scores_train, axis=0)
+    std_t = np.std(scores_train, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
+
+    return mu_t, std_t, pca
+
+
+
+def U_squared(X_test:np.array, mu_train:np.array, std_train:np.array, accumulated:bool = True):
+    aux = (X_test - mu_train) / std_train
+
+    d2 = aux * np.abs(aux)
+
+    if accumulated:
+        d2 = np.sum(d2, axis=1)
+
+    return d2
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     import matlab.engine
 
@@ -665,3 +717,4 @@ if __name__ == "__main__":
 Las diferencias mayores entre Python y MATLAB aparecen principalmente en el cálculo de Q (Error de Predicción) para las distribuciones **exponential** y **binary** cuando **preprocessing=0** (sin centrado/normalización).
 En cambio, para preprocessing=1 o 2 (centrado o escalado), las diferencias son prácticamente nulas (del orden de 1e-15).
 """
+
