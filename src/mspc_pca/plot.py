@@ -383,3 +383,159 @@ def biplot(data, pca_model, pc1: int, pc2: int,
         ax.legend(handles=handles, labels=labels, loc="upper right")
 
     return fig, ax, scatter
+
+
+
+def plot_U_tt(U_train, U_test, percentile=None, 
+                alpha=None, logscale=False, event_index=None, 
+                labels=None, plot_train=True, opacity=None, ax=None):
+    """
+    Plots the U-square results for
+    training and test datasets, supporting one or multiple thresholds.
+    Highlights bars associated with `event_index` in red.
+
+    :param U_train: U-square for the training data.
+    :param U_test: U-square for the test data.
+    :param percentile: Percentile to use for the threshold calculation.
+    :param alpha: Optional list/array of alpha values corresponding to thresholds, used for labels.
+                  Defaults to None.
+    :param logscale: If True, apply a logarithmic scale to the y-axis. Defaults to False.
+    :param event_index: Optional list/array of indices to highlight in red. Defaults to None.
+    :param labels: Optional list of strings for x-axis tick labels. Defaults to None.
+    :param plot_train: If True, both training and test data are plotted. If False, only
+                       test data is plotted. Defaults to True.
+    :param opacity: List of opacity values for each bar. Defaults to None.
+    :param ax: Optional list or tuple of two matplotlib Axes objects ([ax_D, ax_Q]) to plot on.
+               If None, a new Figure and two Axes will be created. Defaults to None.
+    :return: A tuple (Figure, list_of_Axes).
+    """
+    if isinstance(event_index, int):
+        event_index = [event_index]
+        
+    fig = None # Initialize fig to None, will be set if a new figure is created
+
+    if ax is None:
+        # Create a new figure and two subplots if no axes are provided
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    elif isinstance(ax, (list, tuple)) and len(ax) == 2:
+        # Use provided axes
+        fig = ax.figure # Get the figure from the provided axes
+    else:
+        raise ValueError("If 'ax' is provided, it must be a list or tuple of two matplotlib Axes objects.")
+
+    n_train = len(U_train)
+    n_test = len(U_test)
+
+    if isinstance(percentile, (list, tuple)):
+        assert len(percentile) == 2, "Provide two percentiles"
+        top_percentile = percentile[0]
+        bot_percentile = percentile[1]
+    else: top_percentile, bot_percentile = percentile, percentile
+
+    top_threshold_U, bot_threshold_U=None, None
+    if top_percentile is not None:
+        top_threshold_U = np.percentile((U_train[U_train>0]), 100*top_percentile)
+    if bot_percentile is not None:
+        bot_threshold_U = -np.percentile((-U_train[U_train<0]), 100*bot_percentile)
+
+    if plot_train:
+        # Concatenate train and test data for plotting
+        U_to_plot = np.concatenate([U_train, U_test])
+        n_data_to_plot = len(U_to_plot)
+        x_indices = np.arange(n_data_to_plot)
+
+        # Determine colors for U plot
+        if event_index is not None:
+            colors_d = ['red' if i in event_index else ('blue' if i < n_train else 'orange') for i in range(n_data_to_plot)]
+        else:
+            colors_d = ['blue' if i < n_train else 'orange' for i in range(n_data_to_plot)]
+        
+        # Add opacity to colors
+        if opacity is not None and len(opacity) == len(colors_d):
+            colors_d = to_rgba_array(colors_d, alpha=opacity)
+
+        # Plot U_train and U_test
+        ax.bar(np.arange(n_train), U_train, color=colors_d[:n_train], label='Train')
+        ax.bar(np.arange(n_train, n_data_to_plot), U_test, color=colors_d[n_train:], label='Test')
+        ax.axvline(x=n_train - 0.5, color='black', linestyle='--', label='Train/Test Split')
+
+        # Determine colors for Q plot
+        if event_index is not None:
+            colors_q = ['red' if i in event_index else ('green' if i < n_train else 'orange') for i in range(n_data_to_plot)]
+        else:
+            colors_q = ['green' if i < n_train else 'orange' for i in range(n_data_to_plot)]
+
+        # Add opacity to colors
+        if opacity is not None and len(opacity) == len(colors_q):
+            colors_q = to_rgba_array(colors_q, alpha=opacity)
+
+
+    else: # Only plot test data
+        U_to_plot = U_test
+        n_data_to_plot = n_test
+        x_indices = np.arange(n_data_to_plot)
+
+        # Adjust event_index to be relative to U_test if plotting only test data
+        if event_index is not None and max(event_index) > n_test:
+            # Filter event_index to only include those relevant to the test set
+            # and adjust their values to be 0-indexed within the test set
+            adjusted_event_index = [idx - n_train for idx in event_index if idx >= n_train]
+        else:
+            adjusted_event_index = event_index
+        
+        # Determine colors for D plot (test data only)
+        if adjusted_event_index is not None:
+            colors_d = ['red' if i in adjusted_event_index else 'blue' for i in range(n_data_to_plot)]
+        else:
+            colors_d = ['blue'] * n_data_to_plot
+        
+        # Add opacity to colors
+        if opacity is not None:
+            if len(opacity) == len(colors_d):
+                colors_d = to_rgba_array(colors_d, alpha=opacity)
+            elif len(opacity) == n_train + n_test:
+                colors_d = to_rgba_array(colors_d, alpha=opacity[n_train:])
+
+        # Plot U_test
+        ax.bar(x_indices, U_to_plot, color=colors_d, label='Test')
+
+        # Determine colors for Q plot (test data only)
+        if adjusted_event_index is not None:
+            colors_q = ['red' if i in adjusted_event_index else 'green' for i in range(n_data_to_plot)]
+        else:
+            colors_q = ['green'] * n_data_to_plot
+        
+        # Add opacity to colors
+        if opacity is not None:
+            if len(opacity) == len(colors_q):
+                colors_q = to_rgba_array(colors_q, alpha=opacity)
+            elif len(opacity) == n_train + n_test:
+                colors_q = to_rgba_array(colors_q, alpha=opacity[n_train:])
+
+    # --- Common plotting elements for D ---
+    ax.set_ylabel('U square')
+    if np.isscalar(top_threshold_U):
+        ax.axhline(y=top_threshold_U, linestyle='--', label='U threshold - Top', color='red')
+    if np.isscalar(bot_threshold_U):
+        ax.axhline(y=bot_threshold_U, linestyle='--', label='U threshold - Bottom', color='red')
+
+    if logscale:
+        ax.set_yscale('log')
+    ax.legend(loc='upper left')
+    ax.grid(True)
+
+
+    # Apply x-axis labels if provided
+    if labels is not None:
+        if len(labels) == n_train + n_test and plot_train == False:
+            labels = labels[n_train:]
+        
+        if len(labels) != n_data_to_plot:
+            print(f"Warning: Length of 'labels' ({len(labels)}) does not match the number of plotted data points ({n_data_to_plot}). Labels will not be applied.")
+        else:
+            ax.set_xticks(x_indices)
+            ax.set_xticklabels(labels, rotation=45, ha='right') # Rotate for better visibility
+            ax.tick_params(axis='x', which='major', pad=10) # Add some padding for rotated labels
+
+
+    return fig, ax

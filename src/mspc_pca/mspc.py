@@ -510,8 +510,6 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
 
 
 
-
-
 def train_params(X_train:np.array, n_components:int, preprocessing:int=2):
     """
     :param X_train: Training data (numpy array)
@@ -542,16 +540,15 @@ def train_params(X_train:np.array, n_components:int, preprocessing:int=2):
     return mu_t, std_t, pca
 
 
-
 def U_squared(X_test:np.array, mu_train:np.array, std_train:np.array, accumulated:bool = True):
     aux = (X_test - mu_train) / std_train
-
     d2 = aux * np.abs(aux)
 
     if accumulated:
         d2 = np.sum(d2, axis=1)
 
     return d2
+
 
 
 
