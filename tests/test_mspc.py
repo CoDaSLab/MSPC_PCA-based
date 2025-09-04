@@ -19,7 +19,9 @@ def test_U_square():
     X = pca.fit_transform(data)
     U = mspc.U_squared(X, mu, std,)
 
-    plot.plot_U_tt(U[:-k], U[-k:], [.10, .40], plot_train=True)
+    fig, ax = plt.subplots(1,1, figsize=(10,10))
+
+    plot.plot_U_tt(U[:-k], U[-k:], [.10, .40], plot_train=True, ax = ax)
 
     plt.show()
 

@@ -417,11 +417,8 @@ def plot_U_tt(U_train, U_test, percentile=None,
     if ax is None:
         # Create a new figure and two subplots if no axes are provided
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-    elif isinstance(ax, (list, tuple)) and len(ax) == 2:
-        # Use provided axes
-        fig = ax.figure # Get the figure from the provided axes
     else:
-        raise ValueError("If 'ax' is provided, it must be a list or tuple of two matplotlib Axes objects.")
+        fig = ax.figure # Get the figure from the provided axes
 
     n_train = len(U_train)
     n_test = len(U_test)
