@@ -221,7 +221,7 @@ def DQ_tt(X_train, X_test, n_components, preprocessing=2, type_q='Jackson', alph
     return D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q
 
 
-def tscore(X, weight, norm_quantile, n_components, preprocessing=2):
+def tscore(X, weight, norm_quantile, n_components=None, preprocessing=2):
     """
     Calculates T-score values for each observation.
     T = weight * D / UCL_D + (1 - weight) * Q / UCL_Q
@@ -232,7 +232,7 @@ def tscore(X, weight, norm_quantile, n_components, preprocessing=2):
         of lists of D and Q values can be given.
     :param weight: Weighting factor (between 0 and 1) for T-score
     :param norm_quantile: Quantile used for normalization in the T-score formula.
-    :param n_components: Number of principal components to retain
+    :param n_components: Number of principal components to retain. All by default.
     :param preprocessing: Type of preprocessing to apply:
         1: centering
         2: centering and scaling (default)
@@ -271,7 +271,7 @@ def tscore(X, weight, norm_quantile, n_components, preprocessing=2):
     return T
 
 
-def tscore_tt(X_train, X_test, weight, norm_quantile, n_components, preprocessing=2):
+def tscore_tt(X_train, X_test, weight, norm_quantile, n_components=None, preprocessing=2):
     """
     Same as tscore, but for train/test.
 
