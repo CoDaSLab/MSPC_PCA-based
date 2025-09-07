@@ -228,7 +228,8 @@ def tscore(X, weight, norm_quantile, n_components, preprocessing=2):
     UCL_D and UCL_Q are calculated as the norm_quantile and of the D and Q values, respectively
     Original paper: Computers & Security 87 (2019) 101603
 
-    :param X: Input data (numpy array)
+    :param X: Input data matrix (numpy array). Alternatively, a tuple (D, Q) 
+        of lists of D and Q values can be given.
     :param weight: Weighting factor (between 0 and 1) for T-score
     :param norm_quantile: Quantile used for normalization in the T-score formula.
     :param n_components: Number of principal components to retain
@@ -236,29 +237,33 @@ def tscore(X, weight, norm_quantile, n_components, preprocessing=2):
         1: centering
         2: centering and scaling (default)
     """
-    # Preprocessing
-    if preprocessing == 1:
-        mean = np.mean(X, axis=0)
-        X_norm = X - mean
-    elif preprocessing == 2:
-        mean = np.mean(X, axis=0)
-        std = np.std(X, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
-        X_norm = (X - mean) / std
+    if isinstance(X, (tuple, list)) and len(X) == 2:
+        D, Q = X
     else:
-        X_norm = X
+        # Preprocessing
+        if preprocessing == 1:
+            mean = np.mean(X, axis=0)
+            X_norm = X - mean
+        elif preprocessing == 2:
+            mean = np.mean(X, axis=0)
+            std = np.std(X, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
+            X_norm = (X - mean) / std
+        else:
+            X_norm = X
 
-    # PCA
-    pca = PCA(n_components=n_components)
-    scores = pca.fit_transform(X_norm)
+        # PCA
+        pca = PCA(n_components=n_components)
+        scores = pca.fit_transform(X_norm)
 
-    mu_t = np.mean(scores, axis=0)
-    std_t = np.std(scores, axis=0, ddof=1)
-    D = np.sum(((scores - mu_t) / std_t) ** 2, axis=1)
+        mu_t = np.mean(scores, axis=0)
+        std_t = np.std(scores, axis=0, ddof=1)
+        D = np.sum(((scores - mu_t) / std_t) ** 2, axis=1)
+
+        X_norm_reconstructed = pca.inverse_transform(scores)
+        residuals = X_norm - X_norm_reconstructed
+        Q = np.sum(residuals ** 2, axis=1)
+    
     D_limit = np.quantile(D, norm_quantile)
-
-    X_norm_reconstructed = pca.inverse_transform(scores)
-    residuals = X_norm - X_norm_reconstructed
-    Q = np.sum(residuals ** 2, axis=1)
     Q_limit = np.quantile(Q, norm_quantile)
 
     T = weight * D / D_limit + (1 - weight) * Q / Q_limit
@@ -266,15 +271,15 @@ def tscore(X, weight, norm_quantile, n_components, preprocessing=2):
     return T
 
 
-
-
-
 def tscore_tt(X_train, X_test, weight, norm_quantile, n_components, preprocessing=2):
     """
     Same as tscore, but for train/test.
 
-    :param X_train: Training data (numpy array)
-    :param X_test: Test data (numpy array)
+    :param X_train: Training data (numpy array). Alternatively, a tuple (D, Q) 
+        of lists of training D and Q values can be given.
+    :param X_test: Test data (numpy array). Alternatively, a tuple (D, Q) 
+        of lists of test D and Q values can be given. They need to be provided in
+        the same format (array or tuple) as X_train.
     :param weight: Weighting factor (between 0 and 1) for T-score
     :param norm_quantile: Quantile used for normalization in the T-score formula.
     :param n_components: Number of principal components to retain
@@ -282,40 +287,44 @@ def tscore_tt(X_train, X_test, weight, norm_quantile, n_components, preprocessin
         1: centering
         2: centering and scaling (default)
     """
-    # Preprocessing
-    if preprocessing == 1:
-        mean_train = np.mean(X_train, axis=0)
-        X_train_norm = X_train - mean_train
-        X_test_norm = X_test - mean_train
-    elif preprocessing == 2:
-        mean_train = np.mean(X_train, axis=0)
-        std_train = np.std(X_train, axis=0, ddof=1)
-        X_train_norm = (X_train - mean_train) / std_train
-        X_test_norm = (X_test - mean_train) / std_train
+    if isinstance(X_train, (tuple, list)) and len(X_train) == 2:
+        D_train, Q_train = X_train
+        D_test, Q_test = X_test
     else:
-        X_train_norm = X_train
-        X_test_norm = X_test
+        # Preprocessing
+        if preprocessing == 1:
+            mean_train = np.mean(X_train, axis=0)
+            X_train_norm = X_train - mean_train
+            X_test_norm = X_test - mean_train
+        elif preprocessing == 2:
+            mean_train = np.mean(X_train, axis=0)
+            std_train = np.std(X_train, axis=0, ddof=1)
+            X_train_norm = (X_train - mean_train) / std_train
+            X_test_norm = (X_test - mean_train) / std_train
+        else:
+            X_train_norm = X_train
+            X_test_norm = X_test
 
-    # PCA
-    pca = PCA(n_components=n_components)
-    scores_train = pca.fit_transform(X_train_norm)
-    scores_test = pca.transform(X_test_norm)
+        # PCA
+        pca = PCA(n_components=n_components)
+        scores_train = pca.fit_transform(X_train_norm)
+        scores_test = pca.transform(X_test_norm)
 
-    mu_t = np.mean(scores_train, axis=0)
-    std_t = np.std(scores_train, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
-    D_train = np.sum(((scores_train - mu_t) / std_t) ** 2, axis=1)
+        mu_t = np.mean(scores_train, axis=0)
+        std_t = np.std(scores_train, axis=0, ddof=1) # Bessel's correction, shouldn't affect results but is mathematically correct
+        D_train = np.sum(((scores_train - mu_t) / std_t) ** 2, axis=1)
+        D_test = np.sum(((scores_test - mu_t) / std_t) ** 2, axis=1)
+
+        X_train_norm_reconstructed = pca.inverse_transform(scores_train)
+        residuals_train = X_train_norm - X_train_norm_reconstructed
+        Q_train = np.sum(residuals_train ** 2, axis=1)
+        X_test_norm_reconstructed = pca.inverse_transform(scores_test)
+        residuals_test = X_test_norm - X_test_norm_reconstructed
+        Q_test = np.sum(residuals_test ** 2, axis=1)
+   
     D_limit = np.quantile(D_train, norm_quantile)
-
-    X_train_norm_reconstructed = pca.inverse_transform(scores_train)
-    residuals_train = X_train_norm - X_train_norm_reconstructed
-    Q_train = np.sum(residuals_train ** 2, axis=1)
     Q_limit = np.quantile(Q_train, norm_quantile)
     T_train = weight * D_train / D_limit + (1 - weight) * Q_train / Q_limit
-
-    D_test = np.sum(((scores_test - mu_t) / std_t) ** 2, axis=1)
-    X_test_norm_reconstructed = pca.inverse_transform(scores_test)
-    residuals_test = X_test_norm - X_test_norm_reconstructed
-    Q_test = np.sum(residuals_test ** 2, axis=1)
     T_test = weight * D_test / D_limit + (1 - weight) * Q_test / Q_limit
 
     return T_train, T_test

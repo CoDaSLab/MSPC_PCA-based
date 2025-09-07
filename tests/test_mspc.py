@@ -26,12 +26,42 @@ def test_U_square():
     plt.show()
 
 
+def test_tscore_with_array():
+    X = np.random.randn(20, 5)
+    result = mspc.tscore(X, weight=0.5, norm_quantile=0.95, n_components=2)
+    assert isinstance(result, np.ndarray)
+    assert result.shape[0] == X.shape[0]
+    assert not np.any(np.isnan(result))
 
 
+def test_tscore_with_tuple():
+    D = np.random.rand(20)
+    Q = np.random.rand(20)
+    result = mspc.tscore((D, Q), weight=0.7, norm_quantile=0.9, n_components=2)
+    assert isinstance(result, np.ndarray)
+    assert result.shape[0] == len(D)
+    assert not np.any(np.isnan(result))
 
 
+def test_tscore_tt_with_arrays():
+    X_train = np.random.randn(30, 4)
+    X_test = np.random.randn(10, 4)
+    T_train, T_test = mspc.tscore_tt(X_train, X_test, weight=0.6, norm_quantile=0.95, n_components=2)
+    assert isinstance(T_train, np.ndarray)
+    assert isinstance(T_test, np.ndarray)
+    assert T_train.shape[0] == X_train.shape[0]
+    assert T_test.shape[0] == X_test.shape[0]
+    assert not np.any(np.isnan(T_train))
+    assert not np.any(np.isnan(T_test))
 
 
-
-
-
+def test_tscore_tt_with_tuples():
+    D_train = np.random.rand(30)
+    Q_train = np.random.rand(30)
+    D_test = np.random.rand(10)
+    Q_test = np.random.rand(10)
+    T_train, T_test = mspc.tscore_tt((D_train, Q_train), (D_test, Q_test), weight=0.4, norm_quantile=0.9, n_components=2)
+    assert isinstance(T_train, np.ndarray)
+    assert isinstance(T_test, np.ndarray)
+    assert T_train.shape[0] == len(D_train)
+    assert T_test.shape[0] == len(D_test)
