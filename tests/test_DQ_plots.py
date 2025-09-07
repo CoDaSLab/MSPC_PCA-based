@@ -1,4 +1,4 @@
-from src.mspc_pca.mspc import plot_DQ, plot_DQ_tt
+from src.mspc_pca.plot import plot_DQ, plot_DQ_tt, plot_tscore, plot_tscore_tt
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,11 +24,12 @@ def sample_data():
     threshold_Q = 3.0
     return D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q
 
-# @pytest.fixture(autouse=True)
-# def close_plots_after_test():
-#     """Ensures all matplotlib figures are closed after each test."""
-#     yield
-#     plt.close('all')
+# Comment this function if you want to see the graphs
+@pytest.fixture(autouse=True)
+def close_plots_after_test():
+    """Ensures all matplotlib figures are closed after each test."""
+    yield
+    plt.close('all')
 
 class TestPlotDQ:
     def test_basic_plot(self, sample_data_single):
@@ -380,3 +381,197 @@ class TestPlotDQtt:
         # Test with non-list/tuple input
         with pytest.raises(ValueError, match="If 'ax' is provided, it must be a list or tuple of two matplotlib Axes objects."):
             plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, ax="invalid")
+
+
+class TestPlotTscore:
+    def test_basic_plot(self):
+        """Test basic plotting of T."""
+        T = np.random.rand(20) * 10
+        threshold_T = 0.7
+        
+        fig, ax = plot_tscore(T, threshold_T)
+        plt.tight_layout()
+        plt.show()
+        
+        assert fig is not None
+        assert isinstance(fig, plt.Figure)
+        assert isinstance(ax, plt.Axes)
+        assert ax.get_title() == "T-score"
+        assert len(ax.patches) == len(T) 
+        assert len(ax.lines) >= 1 # At least one threshold line
+
+    def test_with_event_index(self):
+        """Test highlighting specific event indices."""
+        T = np.random.rand(20) * 10
+        threshold_T = 0.7
+        event_indices = [5, 19]
+        
+        fig, ax = plot_tscore(T, threshold_T, event_index=event_indices)
+        plt.tight_layout()
+        plt.show()
+        
+        assert len(ax.patches) == len(T)
+
+    def test_logscale(self):
+        """Test plotting with logarithmic scale."""
+        T = np.random.rand(20) * 10
+        threshold_T = 0.7
+        
+        fig, ax = plot_tscore(T, threshold_T, logscale=True)
+        plt.tight_layout()
+        plt.show()
+        
+        assert ax.get_yscale() == 'log'
+
+    def test_scalar_thresholds(self):
+        """Test with scalar thresholds."""
+        T = np.random.rand(20) * 10
+        threshold_T = 0.7
+        
+        fig, ax = plot_tscore(T, threshold_T)
+        plt.tight_layout()
+        plt.show()
+        
+        # Check for D threshold line
+        d_threshold_lines = [line for line in ax.lines if 'Threshold' in line.get_label()]
+        assert len(d_threshold_lines) == 1
+        assert d_threshold_lines[0].get_ydata()[0] == np.quantile(T, threshold_T)
+
+    def test_list_thresholds(self):
+        """Test with list thresholds and alpha values."""
+        T = np.random.rand(20) * 10
+        alpha_values = [0.7, 0.9]
+        
+        fig, ax = plot_tscore(T, threshold_quantiles=alpha_values)
+        plt.tight_layout()
+        plt.show()
+        
+        # Check for D threshold lines
+        d_threshold_lines = [line for line in ax.lines if 'Percentile' in line.get_label()]
+        assert len(d_threshold_lines) == len(alpha_values)
+        # Check that the y-values of the lines match the thresholds
+        assert np.all(sorted([line.get_ydata()[0] for line in d_threshold_lines]) == np.quantile(T, sorted(alpha_values)))
+        # Check labels for alpha values
+        assert any(f'Percentile {100 * alpha_values[0]}' in line.get_label() for line in d_threshold_lines)
+        assert any(f'Percentile {100 * alpha_values[1]}' in line.get_label() for line in d_threshold_lines)
+
+
+    def test_with_provided_ax(self):
+        """Test plotting on pre-existing matplotlib ax objects."""
+        T = np.random.rand(20) * 10
+        threshold_T = 0.7
+        
+        # Create a figure and ax manually
+        fig_manual, ax_manual = plt.subplots()
+        
+        # Pass these ax to the function
+        returned_fig, returned_ax = plot_tscore(T, threshold_T, ax=ax_manual)
+        plt.tight_layout()
+        plt.show()
+        
+        assert fig_manual == returned_fig
+        assert returned_ax is ax_manual
+        
+        # Check if content was added to the provided ax
+        assert len(ax_manual.patches) > 0
+
+
+class TestPlotTscorett:
+    def test_basic_plot(self):
+        """Test basic plotting of T."""
+        T_train = np.random.rand(20) * 10
+        T_test = np.random.rand(10) * 9
+        threshold_T = 0.7
+        
+        fig, ax = plot_tscore_tt(T_train, T_test, threshold_quantiles=threshold_T)
+        plt.tight_layout()
+        plt.show()
+        
+        assert fig is not None
+        assert isinstance(fig, plt.Figure)
+        assert isinstance(ax, plt.Axes)
+        assert len(ax.patches) == len(T_train) + len(T_test) 
+        assert len(ax.lines) >= 1 # At least one threshold line
+
+    def test_with_event_index(self):
+        """Test highlighting specific event indices."""
+        T_train = np.random.rand(20) * 10
+        T_test = np.random.rand(10) * 9
+        threshold_T = 0.7
+        event_indices = [5, 21]
+        opacity = np.random.random((30, 1))
+        
+        fig, ax = plot_tscore_tt(T_train, T_test, threshold_quantiles=threshold_T, 
+                                 event_index=event_indices)
+        plt.tight_layout()
+        plt.show()
+        
+        assert len(ax.patches) == len(T_train) + len(T_test) 
+
+    def test_logscale(self):
+        """Test plotting with logarithmic scale."""
+        T_train = np.random.rand(20) * 10
+        T_test = np.random.rand(10) * 9
+        threshold_T = 0.7
+        
+        fig, ax = plot_tscore_tt(T_train, T_test, threshold_quantiles=threshold_T, logscale=True)
+        plt.tight_layout()
+        plt.show()
+        
+        assert ax.get_yscale() == 'log'
+
+    def test_scalar_thresholds(self):
+        """Test with scalar thresholds."""
+        T_train = np.random.rand(20) * 10
+        T_test = np.random.rand(10) * 9
+        threshold_T = 0.7
+        
+        fig, ax = plot_tscore_tt(T_train, T_test, threshold_quantiles=threshold_T)
+        plt.tight_layout()
+        plt.show()
+        
+        # Check for threshold line
+        d_threshold_lines = [line for line in ax.lines if 'Threshold' in line.get_label()]
+        assert len(d_threshold_lines) == 1
+        assert d_threshold_lines[0].get_ydata()[0] == np.quantile(T_train, threshold_T)
+
+    def test_list_thresholds(self):
+        """Test with list thresholds and alpha values."""
+        T_train = np.random.rand(20) * 10
+        T_test = np.random.rand(10) * 9
+        alpha_values = [0.7, 0.9]
+        
+        fig, ax = plot_tscore_tt(T_train, T_test, threshold_quantiles=alpha_values)
+        plt.tight_layout()
+        plt.show()
+        
+        # Check for D threshold lines
+        d_threshold_lines = [line for line in ax.lines if 'Percentile' in line.get_label()]
+        assert len(d_threshold_lines) == len(alpha_values)
+        # Check that the y-values of the lines match the thresholds
+        assert np.all(sorted([line.get_ydata()[0] for line in d_threshold_lines]) == np.quantile(T_train, sorted(alpha_values)))
+        # Check labels for alpha values
+        assert any(f'Percentile {100 * alpha_values[0]}' in line.get_label() for line in d_threshold_lines)
+        assert any(f'Percentile {100 * alpha_values[1]}' in line.get_label() for line in d_threshold_lines)
+
+
+    def test_with_provided_ax(self):
+        """Test plotting on pre-existing matplotlib ax objects."""
+        T_train = np.random.rand(20) * 10
+        T_test = np.random.rand(10) * 9
+        threshold_T = 0.7
+        
+        # Create a figure and ax manually
+        fig_manual, ax_manual = plt.subplots()
+        
+        # Pass these ax to the function
+        returned_fig, returned_ax = plot_tscore_tt(T_train, T_test, threshold_quantiles=threshold_T, 
+                                                   ax=ax_manual)
+        plt.tight_layout()
+        plt.show()
+        
+        assert fig_manual == returned_fig
+        assert returned_ax is ax_manual
+        
+        # Check if content was added to the provided ax
+        assert len(ax_manual.patches) > 0
