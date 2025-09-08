@@ -292,7 +292,7 @@ def tscore_tt(X_train, X_test, weight, norm_quantile, n_components=None, preproc
         D_train, Q_train = X_train
         D_test, Q_test = X_test
 
-        D_train, Q_train, D_test, Q_test = np.array(D_train), np.array(Q_train), np.array(D_test), np.array(D_test)
+        D_train, Q_train, D_test, Q_test = np.array(D_train), np.array(Q_train), np.array(D_test), np.array(Q_test)
     else:
         # Preprocessing
         if preprocessing == 1:
