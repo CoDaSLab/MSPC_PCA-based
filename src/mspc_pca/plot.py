@@ -385,7 +385,7 @@ def biplot(data, pca_model, pc1: int, pc2: int,
     return fig, ax, scatter
 
 def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None, 
-             alpha=None, type_q='Jackson', labels=None, opacity=None, ax=None):
+             alpha=None, type_q='Jackson', labels=None, opacity=None, bar_width=0.8, ax=None):
     """
     Plots D-statistic and Q-statistic values.
     Highlights bars associated with `event_index` in red.
@@ -401,6 +401,7 @@ def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None,
     :param type_q: Type of Q calculation, used in Q threshold label. Defaults to 'Jackson'.
     :param labels: Optional list of strings for x-axis tick labels. Defaults to None.
     :param opacity: Optional list of opacity values for each bar. Defaults to None.
+    :param bar_width: Width of the bars. Defaults to 0.8.
     :param ax: Optional list or tuple of two matplotlib Axes objects ([ax_D, ax_Q]) to plot on.
                If None, a new Figure and two Axes will be created. Defaults to None.
     :return: A tuple (Figure, list_of_Axes).
@@ -434,7 +435,7 @@ def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None,
     if opacity is not None and len(opacity) == len(D):
         colors_d = to_rgba_array(colors_d, alpha=opacity)
     
-    ax_d.bar(x_indices, D, color=colors_d, label='D')
+    ax_d.bar(x_indices, D, color=colors_d, width=bar_width, label='D')
 
     # Handle thresholds for D
     if np.isscalar(threshold_D):
@@ -464,7 +465,7 @@ def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None,
     if opacity is not None and len(opacity) == len(Q):
         colors_q = to_rgba_array(colors_q, alpha=opacity)
 
-    ax_q.bar(x_indices, Q, color=colors_q, label='Q')
+    ax_q.bar(x_indices, Q, color=colors_q, width=bar_width, label='Q')
 
     # Handle thresholds for Q
     if np.isscalar(threshold_Q):
@@ -499,7 +500,7 @@ def plot_DQ(D, Q, threshold_D, threshold_Q, logscale=False, event_index=None,
 
 def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q, 
                 alpha=None, type_q='Jackson', logscale=False, event_index=None, 
-                labels=None, plot_train=True, opacity=None, ax=None):
+                labels=None, plot_train=True, opacity=None, bar_width=0.8, ax=None):
     """
     Plots the D-statistic and Q-statistic results for
     training and test datasets, supporting one or multiple thresholds.
@@ -520,6 +521,7 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
     :param plot_train: If True, both training and test data are plotted. If False, only
                        test data is plotted. Defaults to True.
     :param opacity: List of opacity values for each bar. Defaults to None.
+    :param bar_width: Width of the bars. Defaults to 0.8.
     :param ax: Optional list or tuple of two matplotlib Axes objects ([ax_D, ax_Q]) to plot on.
                If None, a new Figure and two Axes will be created. Defaults to None.
     :return: A tuple (Figure, list_of_Axes).
@@ -560,8 +562,8 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
             colors_d = to_rgba_array(colors_d, alpha=opacity)
 
         # Plot D_train and D_test
-        ax_d.bar(np.arange(n_train), D_train, color=colors_d[:n_train], label='Train')
-        ax_d.bar(np.arange(n_train, n_data_to_plot), D_test, color=colors_d[n_train:], label='Test')
+        ax_d.bar(np.arange(n_train), D_train, color=colors_d[:n_train], width=bar_width, label='Train')
+        ax_d.bar(np.arange(n_train, n_data_to_plot), D_test, color=colors_d[n_train:], width=bar_width, label='Test')
         ax_d.axvline(x=n_train - 0.5, color='black', linestyle='--', label='Train/Test Split')
 
         # Determine colors for Q plot
@@ -575,8 +577,8 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
             colors_q = to_rgba_array(colors_q, alpha=opacity)
 
         # Plot Q_train and Q_test
-        ax_q.bar(np.arange(n_train), Q_train, color=colors_q[:n_train], label='Train')
-        ax_q.bar(np.arange(n_train, n_data_to_plot), Q_test, color=colors_q[n_train:], label='Test')
+        ax_q.bar(np.arange(n_train), Q_train, color=colors_q[:n_train], width=bar_width, label='Train')
+        ax_q.bar(np.arange(n_train, n_data_to_plot), Q_test, color=colors_q[n_train:], width=bar_width, label='Test')
         ax_q.axvline(x=n_train - 0.5, color='black', linestyle='--', label='Train/Test Split')
 
     else: # Only plot test data
@@ -607,7 +609,7 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
                 colors_d = to_rgba_array(colors_d, alpha=opacity[n_train:])
 
         # Plot D_test
-        ax_d.bar(x_indices, D_to_plot, color=colors_d, label='Test')
+        ax_d.bar(x_indices, D_to_plot, color=colors_d, width=bar_width, label='Test')
 
         # Determine colors for Q plot (test data only)
         if adjusted_event_index is not None:
@@ -623,7 +625,7 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
                 colors_q = to_rgba_array(colors_q, alpha=opacity[n_train:])
 
         # Plot Q_test
-        ax_q.bar(x_indices, Q_to_plot, color=colors_q, label='Test')
+        ax_q.bar(x_indices, Q_to_plot, color=colors_q, width=bar_width, label='Test')
 
     # --- Common plotting elements for D ---
     ax_d.set_title("D-statistic")
@@ -670,7 +672,7 @@ def plot_DQ_tt(D_train, Q_train, D_test, Q_test, threshold_D, threshold_Q,
     return fig, [ax_d, ax_q]
 
 
-def plot_tscore(T, threshold_quantiles=None, logscale=False, event_index=None, labels=None, opacity=None, ax=None):
+def plot_tscore(T, threshold_quantiles=None, logscale=False, event_index=None, labels=None, opacity=None, bar_width=0.8, ax=None):
     """
     Plots T-score values.
     Highlights bars associated with `event_index` in red.
@@ -681,6 +683,7 @@ def plot_tscore(T, threshold_quantiles=None, logscale=False, event_index=None, l
     :param event_index: Optional list/array of indices to highlight in red. Defaults to None.
     :param labels: Optional list of strings for x-axis tick labels. Defaults to None.
     :param opacity: Optional list of opacity values for each bar. Defaults to None.
+    :param bar_width: Width of the bars. Defaults to 0.8.
     :param ax: Optional matplotlib Axes object to plot on.
                If None, a new Figure and Axes will be created. Defaults to None.
     
@@ -715,7 +718,7 @@ def plot_tscore(T, threshold_quantiles=None, logscale=False, event_index=None, l
     if opacity is not None and len(opacity) == len(T):
         colors_d = to_rgba_array(colors_d, alpha=opacity)
     
-    ax.bar(x_indices, T, color=colors_d, label='T')
+    ax.bar(x_indices, T, color=colors_d, width=bar_width, label='T')
 
     if threshold_quantiles is not None:
         # Thresholds
@@ -749,7 +752,7 @@ def plot_tscore(T, threshold_quantiles=None, logscale=False, event_index=None, l
 
 
 def plot_tscore_tt(T_train, T_test, threshold_quantiles=None, logscale=False, 
-               event_index=None, labels=None, plot_train=True, opacity=None, ax=None):
+               event_index=None, labels=None, plot_train=True, opacity=None, bar_width=0.8, ax=None):
     """
     Plots the T-score results for training and test datasets, supporting one or multiple thresholds.
     Highlights bars associated with `event_index` in red.
@@ -765,6 +768,7 @@ def plot_tscore_tt(T_train, T_test, threshold_quantiles=None, logscale=False,
     :param plot_train: If True, both training and test data are plotted. If False, only
                        test data is plotted. Defaults to True.
     :param opacity: Optional list of opacity values for each bar. Defaults to None.
+    :param bar_width: Width of the bars. Defaults to 0.8.
     :param ax: Optional matplotlib Axes object to plot on.
                If None, a new Figure and Axes will be created. Defaults to None.
 
@@ -805,8 +809,8 @@ def plot_tscore_tt(T_train, T_test, threshold_quantiles=None, logscale=False,
             colors_d = to_rgba_array(colors_d, alpha=opacity)
 
         # Plot D_train and D_test
-        ax.bar(np.arange(n_train), T_train, color=colors_d[:n_train], label='Train')
-        ax.bar(np.arange(n_train, n_data_to_plot), T_test, color=colors_d[n_train:], label='Test')
+        ax.bar(np.arange(n_train), T_train, color=colors_d[:n_train], width=bar_width, label='Train')
+        ax.bar(np.arange(n_train, n_data_to_plot), T_test, color=colors_d[n_train:], width=bar_width, label='Test')
         ax.axvline(x=n_train - 0.5, color='black', linestyle='--', label='Train/Test Split')
 
     else: # Only plot test data
@@ -836,7 +840,7 @@ def plot_tscore_tt(T_train, T_test, threshold_quantiles=None, logscale=False,
                 colors = to_rgba_array(colors, alpha=opacity[n_train:])
 
         # Plot T_test
-        ax.bar(x_indices, T_to_plot, color=colors, label='Test')
+        ax.bar(x_indices, T_to_plot, color=colors, width=bar_width, label='Test')
 
     # Thresholds
     if threshold_quantiles is not None:
